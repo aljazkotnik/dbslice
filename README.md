@@ -1,5 +1,7 @@
 This is a branch of the original dbslice project (https://github.com/grahampullan/dbslice).
 
+This fork is a WIP to recreate dbslice in a reactive environment, make the interactive version of it more modular, and update some of it's core functionality and styling.
+
 
 
 Getting the minimal working example going:

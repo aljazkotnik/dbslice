@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+
+<head lang='en'>
+  <meta charset='utf-8'>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"> 
+  <title>dbslice v2</title>
+  
+  
+  <link rel="shortcut icon" href="image/favicon.png"/>
+	
+  <!-- STYLING -->
+  <link rel="stylesheet" href="/style/app.css">  
+  <link rel="stylesheet" href="/style/fonts/roboto-condensed/roboto-condensed.css">
+  <link rel="stylesheet" href="/style/fonts/fontawesome/font-awesome_4.7.0.min.css">
+  
+  
+  
+  <!-- d3 only for dev options! -->
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+	
+</head>
+
+
+
+
+<body>
+  <div id="app">
+    <h1>App</h1>
+    <button id="ply" class="btn-small">Session</button>
+  </div>
+  
+  <div>
+	<div id="tabletop" style="position: absolute;"></div>
+	<div id="navigationtree" style="position: absolute;"></div>
+	<div id="tooltip"></div>
+  </div>
+  
+  
+  
+  
+  
+  <!-- Containers for variable handling and loading reports. NOTE: it is important that the report container is below the merging container!! -->
+  <div id="merging-container" class="fullscreen-container" style="display: none;"></div>
+  <div id="report-container" class="fullscreen-container" style="display: none;"></div>
+  
+  
+  <!-- Run the bundled script -->
+  <script src='/dist/dbslice.js'></script>  
+  
+  
+</body>
+
+</html>
