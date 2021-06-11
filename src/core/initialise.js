@@ -1,12 +1,20 @@
+
 import {dbsliceData} from "./dbsliceData.js";
+
+/*
 import {cfDataManager} from "./cfDataManager.js";
 import {sessionManager} from "./sessionManager.js";
 import {fileManager} from "./fileManager.js";
 import {addMenu} from "./addMenu.js";
 import {builder} from "./builder.js";
+*/
 
 export function initialise(session) {
 		
+		// Maybe move this whole thing to main anyway?
+		console.log("Initialise")
+		
+		/*
 
 		// Initialise the crossfilter.
 		cfDataManager.cfInit();
@@ -70,5 +78,6 @@ export function initialise(session) {
 		  ev.preventDefault();
 		} // dragOverHandler
 
+	*/
 
     } // initialise

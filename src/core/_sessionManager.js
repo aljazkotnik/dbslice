@@ -4,58 +4,6 @@ import {plotRow} from "./plotRow.js";
 import {dbsliceDataCreation} from "./dbsliceDataCreation.js";
 import {fileManager} from "../core/fileManager.js";
 
-
-
-// MIGRATION
-
-// MOVE TO SESSION MANAGER.
-	exporting : {
-			
-		session : {
-			
-			download: function(){
-				
-				
-				
-				// Make a blob from a json description of the session.
-				var b = fileManager.exporting.session.makeTextFile( sessionManager.write() )
-				
-				
-				// Download the file.
-				var lnk = document.createElement("a")
-				lnk.setAttribute("download", "test_session.json")
-				lnk.setAttribute("href", b)
-				
-				var m = document.getElementById("saveSession")
-				m.appendChild(lnk)
-				lnk.click()
-				lnk.remove()
-				
-			}, // download
-			
-			makeTextFile: function makeTextFile(text) {
-				var data = new Blob([text], {
-					type: 'text/plain'
-				}); 
-				
-				var textFile = null;
-				// If we are replacing a previously generated file we need to
-				// manually revoke the object URL to avoid memory leaks.
-				if (textFile !== null) {
-					window.URL.revokeObjectURL(textFile);
-				} // if
-
-				textFile = window.URL.createObjectURL(data);
-				
-			  return textFile;
-			}, // makeTextFile
-			
-			
-		}, // session
-		
-	}, // exporting
-
-
 export var sessionManager = {
 	
 		initialise: function(session){

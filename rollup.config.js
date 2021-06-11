@@ -19,12 +19,14 @@ export default [
 		plugins: [
 			resolve(), // so Rollup can find `ms`
 			babel({
-			  exclude: "node_modules/**"
+			  exclude: "node_modules/**",
+			  babelHelpers: "bundled"
 			}),
 			commonjs(), // so Rollup can convert `ms` to an ES module
 			replace({preventAssignment: true, 'process.env.NODE_ENV': JSON.stringify( 'development' )}), // This fixed module loading!!
 			babel({
-			  exclude: "node_modules/**"
+			  exclude: "node_modules/**",
+			  babelHelpers: "bundled"
 			})
 		]
 	},

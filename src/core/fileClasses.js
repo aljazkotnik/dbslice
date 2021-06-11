@@ -1,7 +1,16 @@
+
+// Used by metadataFile and sessionFile
 import {helpers} from "./helpers.js"
 import {categoryInfo} from "./categoryInfo.js"
+
+
+// Used by session file
 import {dbsliceDataCreation} from "./dbsliceDataCreation.js"
 import {fileManager} from "./fileManager.js"
+
+// Only dbslicefile has errors. The errors are called in dbsliceDataCreation as FILE.errors. Maybe keep the general file assembly here? So here just import everything else needed? Maybe keep the errors fixed to the files themselves? Ah, but the files with the errors are not kept in the library anyway. Maybe they should be, and just reloaded everytime if they have no content?
+
+// BUT ONLY CORRECTLY LOADED FILES ARE KEPT to allow dbslice renewed loading of those files. Or should the loader just check if they have contents, and load them again? Yes, maybe the library should have an unsuccessful attribute, which would hold only relevant information.
 
 export var errors = {
 		/* ERRORS SHOULD (!!!) BE LOGGED IN AN ERROR OBJECT TO ALLOW THE FAULTY FILES TO BE RELEASED FROM MEMORY!!
