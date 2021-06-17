@@ -54,17 +54,20 @@ export default class filelibrary {
 			// Initiate loading. After loading if the file has loaded correctly it has some content and can be added to internal storage.
 			let fileobj = new classref(filename);
 			fileobj.load()
-			obj.store(fileobj)
+			fileobj.promise.then(fileobj_ => obj.store(fileobj_))
+			// obj.store(fileobj)
 			return fileobj.promise;
 		} // if
 				
 	} // single
 	
 	
+	
+	// THE ANONYMOUS FUNCTION MUST BE THE `ACTION'. REWORK
 	store(fileobj){
 		let obj = this;
 		
-		fileobj.promise.then(function(fileobj){
+		// fileobj.promise.then(function(fileobj){
 			
 			// Other files should be stored if they have any content.
 			if( fileobj.content ){
@@ -75,7 +78,7 @@ export default class filelibrary {
 				obj.failed.push(fileobj)
 			} // if
 			
-		}) // then
+		// }) // then
 				
 	} // store
 	

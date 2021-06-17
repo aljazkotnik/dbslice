@@ -3,8 +3,9 @@
 
 // How to create
 
-import metadatamanager from "./core/metadatamanager.js";
+// import metadatamanager from "./core/metadatamanager.js";
 import filelibrary from "./core/filelibrary.js";
+import metadatamerger from "./core/metadatamerger.js";
 import metadataFile from "./core/supportedfiles/metadataFile.js";
 
 
@@ -12,22 +13,16 @@ import metadataFile from "./core/supportedfiles/metadataFile.js";
 
 
 // For the file library now set some required extent, and then ask for some of the files.
-let testrequired = ["./data/m_c3s.csv"];
+let testrequired = ["./data/m_c3s_0.csv", "./data/m_c3s_1.csv"];
 let library = new filelibrary()
 library.required = testrequired;
 
 
 
+
 // The metadatamanager should observe the metadatafiles
-let manager = new metadatamanager(library.files);
+// let manager = new metadatamanager(library.files);
 
-
-console.log(library, manager);
-
-
-
-// Print the content of the library now.
-console.log(library.files)
 
 
 /* Request a single metadata file. The input for files should be an object:
@@ -36,11 +31,40 @@ console.log(library.files)
 		filename: filename
 	}
  */
-library.single(metadataFile, {url: "./data/m_c3s.csv", filename: "./data/m_c3s.csv"});
+library.single(metadataFile, {url: "./data/m_c3s_0.csv", filename: "./data/m_c3s_0.csv"});
+library.single(metadataFile, {url: "./data/m_c3s_1.csv", filename: "./data/m_c3s_1.csv"});
+console.log(library);
 
 
-console.log(library.files)
 
 
-console.log(manager.files)
+
+
+
+// Append the node to the merging container. Then append the show functionality somewhere.
+
+document.getElementById("merging-show").addEventListener("click", ()=>{
+	let container = document.getElementById("fullscreen-menu-container");
+	
+	if(container.lastChild){
+		container.lastChild.remove()
+	} // if
+	
+	
+	
+	// Maybe wait for hte file to be loaded. Or just append the initialisation to the button.
+	let metadatafiles = library.retrieveByClass(metadataFile);
+
+	
+	// Make a mergerer.
+	let mergerer = new metadatamerger(metadatafiles);
+	
+	
+	
+	container.appendChild(mergerer.node);
+	
+	mergerer.show()
+});
+
+
 

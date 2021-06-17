@@ -1,3 +1,16 @@
+// General helpers.
+import {unique} from "./helpers.js";
+
+// Crossfilter accelerates array queries.
+import crossfilter from "crossfilter";
+
+
+// Reacitvity components
+import {makeObservable, observable, computed, autorun, action} from "mobx";
+
+
+
+
 
 // This class handles all the filtering management that is required.
 
@@ -7,6 +20,10 @@
 // The session manager will tell it which variables are still used in order to update the filters and so on.
 
 export default class filtermanager {
+	
+	
+	_categorical = []
+	_ordinal = []
 
 	constructor(){
 		
@@ -15,198 +32,164 @@ export default class filtermanager {
 		
 		let obj = this;
 		
-		obj.files = files;
 		
 		
 		// This is a mix of the crossfilter, it's dimensions, and some metadata about the metadata in the crossfilter. Untangle?
-		let cf = crossfilter([])
+		obj.cf = crossfilter([])
+			
+		// Crossfilter and the associated dimensions.
+		obj.categoricalDims = {},
+		obj.ordinalDims = {},
+		obj.taskDim = obj.cf.dimension(d=>d.taskId),
 		
+		// Filters - these will have to be observable
+		obj.categoricalFilter = {},
+		obj.ordinalFilter = {},
+		obj.manualFilter = [],
 		
-		// Maybe this should be a separate state to control itself? It could be a helper class within here? So that it controls the filtering etc, there will be another class for user interactions.
-		obj.data = {
-			
-			// Metadata about metadata.
-			categoricalProperties: [],
-			ordinalProperties: [],
-			line2dProperties: [],
-			contour2dProperties: [],
-			
-			
-			// Crossfilter and the associated dimensions.
-			cf: cf,
-			categoricalDims: {},
-			ordinalDims: {},
-			taskDim : cf.dimension(d=>d.taskId),
-			fileDim : cf.dimension(d=>d.filenameId),
-			
-			// Filters.
-			filterSelected: [],
-			histogramSelectedRanges: [],
-			manuallySelectedTasks: [],
-			
 
 		
-		}; // cfData		
+
+		// Make a computed state with the current selection.
+				
 		
+		// Variables that are currently active - prescribed by the session.Should have getter and setter then.
+		obj.active = [];
+		
+		
+		
+		
+		makeObservable(obj, {
+			_categorical: observable,
+			_ordinal: observable,
+			swapdata: action,
+			activate: action,
+			categoricalUniqueValues: computed,
+			ordinalRanges: computed
+		})
+		
+		
+		
+		autorun(()=>{obj.update()})
 		
 	} // constructor
 	
 	
 	
-	
-	// Well, the metadata manager shouldn't update everytime the files update. But I guess this will update it every time. Will the observable down the line change if this computes the same state? I think so no?
-	get metadatafiles(){
+	// MAKE THE INTERNAL STORAGE PRIVATE UNDER A NEW NAME?
+	set categorical(properties){
 		let obj = this;
-		
-		// Find all correctly loaded metadata files.
-		let valid = obj.files.filter( fileobj => { return fileobj instanceof metadataFile })
-		// let valid = obj.files.filter( fileobj => true)
-		return valid
-	} // metadatafiles
+		if(properties){
+			obj._categorical = properties;
+		} // if
+	} // categoricalProperties
 	
+	get categorical(){
+		return this._categorical
+	} // categoricalProperties
 	
+	set ordinal(properties){
+		let obj = this;
+		if(properties){
+			obj._ordinal = properties;
+		} // if
+	} // ordinalProperties
 	
-	// Now every time the metadata files change we should call the UI, merge the metadata, and then continue.
-	
-	
+	get ordinal(){
+		return this._ordinal
+	} // ordinalProperties
 
-	// This should be an action somehow no?
-	// cfChange -> swapdata
+	// This should be an action somehow - only set the raw metadata somewhere, and then let the computed state be made based on that.
 	swapdata(metadata){
 		// Handle the change to the metadata. Simply exchange all the internal data. But, I may need to retain the filter settings?
-		let cf = this.data.cf;
 		
 		// Exchange the data.
-		cf.remove()
-		cf.add(metadata.data)
+		this.cf.remove()
+		this.cf.add(metadata.data)
 		
 		// Resolve the differences between the old variables and the new variables.
-		this.#resolveHeaderChange(metadata.header)
-		// cfDataManager.resolve.cfData.headerChange(metadata.header)
 		
+		this.categorical = metadata.header.categorical;
+		this.ordinal = metadata.header.ordinal;
 		
 	} // swapdata
 	
 	
-	// Identify this as a private method to see if babel works.
-	#resolveHeaderChange(newHeader){
-		// `resolveHeaderChange' updates the data storage to match the provided `newHeader'. Only the properties of `newHeader' that are congruent with the data storage are changed, and others are ignored.
-		
+	// When plots are being deleted the session manager should be able to just give a list of active variables to the filtermanager, and it should figure out which dimensions to keep, and which to remove. Dimensions should be kept long term, therefore autorun should be used to update them instead of thm being computed.
+	
+	
+	
+	
+	// Should be an action from outside - if the user creates a plot which allows filtering it will need a dimension. It's the responsibility of the session to state what is still active, and what isn't.
+	activate(variables){
+		// Check what kind of dimension can be created, and then make it.
 		let obj = this;
-		
-		// cfData -> data
-		let data = this.data;
-		
-	
-		
-		// Go through the new header. The changes require also the crossfilter dimensions to be adjusted.
-		Object.keys(newHeader).forEach(function(key){
-			
-			// Find the differences for this category that need to be resolved. 'diff' has items aMinusB (in current, but not in new) and bMinusA ( in new, but not in current)
-			let diff = setDifference(data[key], newHeader[key])
-			
-			switch(key){
-				case "categoricalProperties":
-				  
-					// Dimensions first
-					obj.#resolveDimensions(data.categoricalDims, diff)
-				  
-					// Metadata dimensions have precomputed unique values. Create these ones for new variables, and delete any unnecessary ones.
-					obj.#resolveUniqueValues(data.categoricalUniqueValues, diff)
-				  break;
-				
-				case "ordinalProperties":
-				
-					// Dimensions first
-					obj.#resolveDimensions(data.ordinalDims, diff)
-				  
-					// Data dimensions have corresponding histogram ranges. Delete unnecessary ones, and create necessary ones.
-					obj.#resolveHistogramRanges(data.histogramSelectedRanges, diff)
-				  break;
-				  
-				  
-				// Nothing apart from the default change of the options in the header needs to be done.
-				case "line2dProperties":
-				case "contour2dProperties":
-				  break;
-				
-			} // switch
-			
-			// Resolve the header.
-			data[key] = newHeader[key]
-			
-		}) // forEach
-		
-		
-		
-		
-		
-	} // resolveHeaderChange
-	
+		obj.active = variables;
+	} // activate
 	
 	
 
-	
-	
-	#resolveDimensions(dims, diff){
-		// `resolveDimensions' takes in an object `dims' that contains crossfilter dimensions, and updates it using the difference information supplied by an object `diff'.
-		let cf = this.data.cf;
-		
-		// Those in A, but not in B, must have their cf dimensions removed.
-		diff.aMinusB.forEach(function(varName){
-		  delete dims[varName]
-		}) // forEach
-	  
-		// Those in B, but not in A, must have cf dimensions created.
-		diff.bMinusA.forEach(function(varName){
-		  dims[varName] = cf.dimension(function (d){return d[varName];})
-		}) // forEach
-		
-	} // resolveDimensions
-	
-	
-	#resolveUniqueValues(vals, diff){
+	update(){
+		// The dimensions are supposed to persist and therefore cannot be a computed value. Instead they should be updated in an autorun that fires anytime either the `header', or `active' is changed.
 		let obj = this;
 		
-		obj.#resolveAttributes(vals, diff, function (varName){
-			// Find all the unique values for a particular variable.
-			return unique( 
-			  obj.data.cf.all().map(function(d){return d[varName]})
-			); // unique
-		}) // resolveAttributes
+		// Update dimensions.
+		obj.#resolveDimensions(obj.categorical, obj.categoricalDims)
+		obj.#resolveDimensions(obj.ordinal, obj.ordinalDims)
 		
-	} // resolveUniqueValues
+	} // update
 	
-	#resolveHistogramRanges(vals, diff){
+	#resolveDimensions(variables, dimensions){
+		// `resolveDimensions' takes in an array of variable names `variables', and creates/keeps a crossfilter dimension for all active variables, while deleting non-active dimensions.
 		let obj = this;
 		
-		obj.#resolveAttributes(vals, diff, function (varName){
-			// Find the max range for the histogram.
-			let tasks = dbsliceData.data.cf.all()
-			return d3.extent(tasks, d=>d[varName])
-		}) // resolveAttributes
-		
-	} // resolveHistogramRanges
-	
-	#resolveAttributes(vals, diff, populate){
-		// Vals is an object of attributes that  needs to be resolved. The resolution of the attributes is given by diff. Populate is a function that states how that attribute should be populated if it's being created, and is passed in as it may need to be used multiple times.
-				
-		// Delete
-		diff.aMinusB.forEach(function(varName){
-			delete vals[varName]
-		})
-		
-		// Variables that are in 'new', but not in 'old'.
-		diff.bMinusA.forEach(function(varName){
-			// If a populate function is defined, then create an entry, otherwise create an empty one.
-			if(populate){
-				vals[varName] = populate(varName)	
+		variables.forEach(variable => {
+			if( obj.active.includes(variable) ){
+				// Dimension is needed. If it doesn't yet exist make it.
+				if( !dimensions[variable] ){
+					dimensions[variable] = obj.cf.dimension(d=>d[variable])
+				} // if
 			} else {
-				vals[varName] = []
+				// Variable is not active, therefore delete it.
+				delete dimensions[variable];
 			} // if
-		})
+		}) // forEach
 		
 		
-	} // resolveAttributes
+	} // #resolveDimensions
+	
+	
+	
+	// unique categorical values and ordinal number ranges should be computed - every time the data is changed. These are constant afterwards anyway.
+	
+	// Use computed for the unique values and ordinal ranges. They depend on hte header information, as that defines what can be accessed.
+	get categoricalUniqueValues(){
+		let obj = this;
+		
+		return obj.#calculateVariableProperty( obj.categorical, unique )
+		
+	} // categoricalUniqueValues
+	
+
+	get ordinalRanges(){
+		let obj = this;
+		
+		return obj.#calculateVariableProperty( obj.ordinal, d3.extent )
+	} // ordinalRanges
+	
+	
+	#calculateVariableProperty(variables, reducer){
+		// `calculateVariableProperties' takes an array of variable names `properties', and calculates a value for each by applying the `reducer' function to an array of values for that variable in hte crossfilter.
+		let obj = this;
+		
+		let alltasks = obj.cf.all();
+		
+		return variables.reduce((a, variable) => {
+			a[variable] = reducer( alltasks.map(task => task[variable]) );
+			return a
+		}, {})
+		
+	} // calculateVariableProperties
+
 		
 } // metadatamanager
