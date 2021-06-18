@@ -89,8 +89,107 @@ let css = {
 
 
 
-// The html constructor
-class template{
+// Split this thing off to a separate folder, and keep separate files in htere.
+
+
+// Button templates
+let button = {
+	
+	template: function(name, cssstyle, cssclassname){
+		return `
+		  <button class="${cssclassname}" style="${ cssstyle }">
+			<strong>${ name }</strong>
+		  </button>
+		`
+	}, // button
+	
+	ghost: function(classnames){
+		let cssstyle = css.btnPill + css.btnGhost;
+		let cssclass = classnames ? `ghost ${classnames.join(" ")}` : "ghost";
+		return button.template("ghost", cssstyle, cssclass);		
+	} // ghostButton
+	
+} // button
+
+
+// General helper.
+function html2element(html){
+	let template = document.createElement('template'); 
+	template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
+	return template.content.firstChild;
+} // html2element
+
+
+// Rework the template into smaller classes? That way the connection between the data and the html could be in the classes as opposed to being due to the d3 data bind.
+
+
+// The filedov is the simplest way to bind data to the dom without d3. The variable dragging happens within the constraint of a file, so the button can look itself up in the fileobj, and check where it can be appended.
+class filediv{
+	
+	constructor(fileobj, categories, color){
+		let obj = this;
+		
+		obj.file = fileobj;
+		obj.categories = categories;		
+		obj.color = color;
+		
+		// Create the node.
+		obj.node = html2element( obj.filecolumn() );
+
+		// Apply the dragging. Dragging must be applied outside, as other filedivs are required in the functionality also.
+	
+	} // constructor
+	
+	filecolumn(){
+		let obj = this;
+		
+		return `
+		  <div class="file" style="${ css.divFileColumn }">
+			<p style="text-align: center;">
+			  <strong>${ obj.file.filename }</strong>
+			</p>
+		  
+			${ obj.categories.map(category=>obj.category(category)).join("") }
+		  
+		  </div>
+		`
+		
+	} // filecolumn
+
+
+	category(category){
+		let obj = this;
+		
+		let variables = obj.file.content.variables.filter(varobj=>varobj.category==category)
+		
+		return `
+		  <div style="${ css.divCategoryWrapper }">
+			<div class="category ${ category }" style="${ css.divCategory }">
+			  ${ variables.map(variableobj=>obj.draggablebutton(variableobj)).join("") }
+			  
+			  ${
+				  button.ghost(["ghost-endstop"])
+			  }
+			</div>
+		  </div>
+		`
+		
+	} // category
+	
+	
+	draggablebutton(variableobj){
+		// Simply add the valid category names to the button class?
+		let obj = this;
+		let cssstyle = css.btnPill + css.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
+		let cssclasses = variableobj.supportedCategories.concat("draggable").join(" ")
+		return button.template(variableobj.name, cssstyle, cssclasses);
+	} // draggableButton
+	
+} // filediv
+
+
+
+class app{
 	
 	constructor(files, categories){
 		let obj = this;
@@ -107,7 +206,29 @@ class template{
 	
 	get node(){
 		let obj = this;
-		return template.html2element(obj.app())
+		
+		let appNode = html2element( obj.template() );
+		
+		// Append the filedivs to it.
+		let appNodeBody = appNode.querySelector("div.body");
+		
+		// Create a class instance for all files. Just have a filediv object? That is the basis for the interactions anyway.
+		obj.files.forEach(fileobj=>{
+			let filedivobj = new filediv(fileobj, obj.categories, obj.color);
+			
+			// Append the file.
+			appNodeBody.appendChild(filedivobj.node)
+			
+			// Append the drag behavior to all hte buttons.
+			let draggables = filedivobj.node.querySelectorAll("button.draggable");
+			draggables.forEach(draggable=>{
+				
+				// Pass in the draggable, and the filedivobj. That one will have the `categorydivs', 'color', and the `body'
+				new variabledrag(draggable, filedivobj)
+			})
+		}); // forEach
+		
+		return appNode
 	} // node
 	
 	
@@ -124,21 +245,15 @@ class template{
 	} // color
 	
 
-	app(){
-		
-		/* NEEDED CSS
-			fullscreen-container
-			card 
-			card-menu
-			card-header
-			btn
-			btn-report
-			card-body
-			card-footer
-		*/
-		
+	template(){
 		// this is the template object now.
 		let obj = this;
+		
+		/*
+		<div style="display: table-row">
+			  ${ obj.files.map(fileobj=>obj.filecolumn(fileobj)).join("") }
+		</div>
+		*/
 		
 		
 		return `
@@ -163,9 +278,7 @@ class template{
 		  
 		  
 		  <div class="body" style="overflow-y: scroll; overflow-x: auto; height: 400px;">
-
-			${ obj.files.map(fileobj=>obj.filecolumn(fileobj)).join("") }
-
+			
 		  </div>
 		  
 		  
@@ -179,84 +292,13 @@ class template{
 		
 	} // app
 
-
-	filecolumn(fileobj){
-		let obj = this;
-		
-		return `
-		  <div class="file" style="${ css.divFileColumn }">
-			<p style="text-align: center;">
-			  <strong>${ fileobj.filename }</strong>
-			</p>
-		  
-			${ obj.categories.map(category=>obj.category(fileobj, category)).join("") }
-		  
-		  </div>
-		`
-		
-	} // filecolumn
-
-
-	category(fileobj, category){
-		let obj = this;
-		
-		let variables = fileobj.content.variables.filter(varobj=>varobj.category==category)
-		
-		return `
-		  <div style="${ css.divCategoryWrapper }">
-			<div class="category ${ category }" style="${ css.divCategory }">
-			  ${ variables.map(variableobj=>obj.draggablebutton(variableobj)).join("") }
-			  
-			  ${
-				  template.ghostbutton(["ghost-endstop"])
-			  }
-			</div>
-		  </div>
-		`
-		
-	} // category
-
-
-
-
-	static button(name, cssstyle, cssclassname){
-		
-		return `
-		  <button class="${cssclassname}" style="${ cssstyle }">
-			<strong>${ name }</strong>
-		  </button>
-		`
-	} // button
-
-
-	draggablebutton(variableobj){
-		let obj = this;
-		let cssstyle = css.btnPill + css.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
-		let cssclasses = variableobj.supportedCategories.concat("draggable").join(" ")
-		return template.button(variableobj.name, cssstyle, cssclasses);
-	} // draggableButton
-
 	legendbutton(category){
 		let obj = this;
 		let cssstyle = css.btnPill + css.btnLegend + `background-color: ${ obj.color(category) };`;
-		return template.button(category, cssstyle, "draggable");
+		return button.template(category, cssstyle, "draggable");
 	} // draggableButton
 
-	static ghostbutton(classnames){
-		let cssstyle = css.btnPill + css.btnGhost;
-		let cssclass = classnames ? `ghost ${classnames.join(" ")}` : "ghost";
-		return template.button("ghost", cssstyle, cssclass);		
-	} // ghostButton
-	
-	
-	static html2element(html){
-		let template = document.createElement('template'); 
-		template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
-		return template.content.firstChild;
-	} // html2element
-	
-	
-} // template
+} // app
 
 
 
@@ -264,19 +306,19 @@ class template{
 
 // This is the dragging.
 class variabledrag extends dragnode{
-	constructor(node, containers, parent, color){
-		super(node)
+	constructor(draggablenode, filedivobj){
+		super(draggablenode)
 		
 		let obj = this;
 		
 		// Containers are specified to limit the number of divs the button can be moved to.
-		obj.containers = containers;
+		obj.containers = filedivobj.node.querySelectorAll("div.category");
 		
 		// The parent is required as the height of categories depends on other corresponding categories.
-		obj.parent = parent;
+		obj.parent = filedivobj.node.parentElement;
 		
 		// The color cheme is needed to allow the button to change color when it is assigned to a new category.
-		obj.color = color;
+		obj.color = filedivobj.color;
 		
 		obj.apply();
 		
@@ -348,7 +390,10 @@ class variabledrag extends dragnode{
 	
 	isContainerCompatible(container){
 		let obj = this;
-		return obj.node.classList.contains(container.classList[1])
+		
+		// The container only has one category class name specified, the dragged node has potentially many.
+		
+		return true
 	} // isContainerCompatible
 	
 	calculateoverlap(a,b){
@@ -402,7 +447,7 @@ class variabledrag extends dragnode{
 		
 		function move(a,container,b){
 			// Append a ghost node to the origin.
-			let originghost = template.html2element(template.ghostbutton());
+			let originghost = html2element(button.ghost());
 			a.parentElement.insertBefore(originghost, a);
 			
 			// Append to ghost position.
@@ -517,7 +562,7 @@ class variabledrag extends dragnode{
 				let k = n - category.children.length;
 				let endstop = category.querySelector("button.ghost-endstop")
 				for(let i=0; i<k; i++){
-					category.insertBefore(template.html2element(template.ghostbutton()), endstop)
+					category.insertBefore(html2element(button.ghost()), endstop)
 				} // for
 			}) // forEach
 			
@@ -558,23 +603,10 @@ export default class metadatamerger {
 		// It will need to keep track of the merging information. Maybe it should be a property of this object actually
 		obj.merging = {};
 		
-		
-		
-		
-		let builder = new template(obj.files, obj.categories)
+	
+		let builder = new app(obj.files, obj.categories)
 		obj.node = builder.node;
 		
-		// Apply the draggable functionality. This should really be applied on a file by file basis.
-		let body = obj.node.querySelector("div.body");
-		let filedivs = obj.node.querySelectorAll("div.file");
-		filedivs.forEach(filediv=>{
-			let categories = filediv.querySelectorAll("div.category");
-			let draggables = filediv.querySelectorAll("button.draggable");
-			
-			draggables.forEach(draggable=>{
-				new variabledrag(draggable, categories, body, builder.color)
-			})
-		}) // forEach
 		
 		// HOW TO CONSOLIDTE ALL THE categories??
 		

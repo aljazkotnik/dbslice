@@ -2,6 +2,7 @@
 
 var mobx = require('mobx');
 var d3$1 = require('d3');
+require('d3-time-format');
 
 function _interopNamespace(e) {
 	if (e && e.__esModule) return e;
@@ -324,7 +325,6 @@ class dragnode {
 } // dragdiv
 
 // Declare the necessary css here.
-
 let css = {
   btn: `
 	  border: none;
@@ -411,11 +411,7 @@ let css = {
 
 
 
-
-// Maybe also the html template? But that one requires variables to be available too..
-
-// TEMPLATES. COMBINE IF POSSIBLE. MOVE OUTSIDE OF THE CLASS. MAYBE THIS SHOULD BE IT's OWN CLASS?
-
+// The html constructor
 class template{
 	
 	constructor(files, categories){
@@ -425,11 +421,9 @@ class template{
 		obj.files = files;
 		
 		
-		obj.categories = categories;
+		// Categories should include `unused';
+		obj.categories = unique( categories.concat("unused") );
 
-		
-		
-		
 	} // constructor
 	
 	
@@ -447,7 +441,7 @@ class template{
 		  .domain(obj.categories);
 		  
 		return function(category){
-			return category == "Unused" ? "gainsboro" : scheme(category)
+			return category == "unused" ? "gainsboro" : scheme(category)
 		}
 	} // color
 	
@@ -491,9 +485,9 @@ class template{
 		  
 		  
 		  <div class="body" style="overflow-y: scroll; overflow-x: auto; height: 400px;">
-			<div style="display: table-row">
-			  ${ obj.files.map(fileobj=>obj.filecolumn(fileobj)).join("") }
-			</div>
+
+			${ obj.files.map(fileobj=>obj.filecolumn(fileobj)).join("") }
+
 		  </div>
 		  
 		  
@@ -560,7 +554,8 @@ class template{
 	draggablebutton(variableobj){
 		let obj = this;
 		let cssstyle = css.btnPill + css.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
-		return template.button(variableobj.name, cssstyle, "draggable");
+		let cssclasses = variableobj.supportedCategories.concat("draggable").join(" ");
+		return template.button(variableobj.name, cssstyle, cssclasses);
 	} // draggableButton
 
 	legendbutton(category){
@@ -587,24 +582,25 @@ class template{
 
 
 
+// The functionality.
 
-// How to allow the button to be put into the appropriate position when dropped? Make a tracker class, and a button class? The button class should append
-
-
-// VARIABLES MUST STAY WITHIN HTE SAME FILE!! IMPLEMENT THIS BY CONSTRAINING THE CONTAINERS GOING INTO VARIABLEDRAG
-
+// This is the dragging.
 class variabledrag extends dragnode{
-	constructor(node, containers, parent){
+	constructor(node, containers, parent, color){
 		super(node);
 		
 		let obj = this;
 		
+		// Containers are specified to limit the number of divs the button can be moved to.
 		obj.containers = containers;
-		obj.parent = parent;
-		obj.apply();
 		
-		// Keep track of a destination ghost element?
-		obj.originghost = undefined;
+		// The parent is required as the height of categories depends on other corresponding categories.
+		obj.parent = parent;
+		
+		// The color cheme is needed to allow the button to change color when it is assigned to a new category.
+		obj.color = color;
+		
+		obj.apply();
 		
 	} // constructor
 	
@@ -631,12 +627,13 @@ class variabledrag extends dragnode{
 		
 		let current = obj.currentcontainer();
 		obj.reposition(current);
-		obj.originghost = undefined;
 		obj.stylecontainers();
 		
-		// Coordinate filedivs.
-		obj.trimcontainers();
+		// Make sure the categories of all files maintain consistent heights, and are as short as possible.
 		obj.coordinateFileDivs();
+		
+		// Change the color of the variable to match its new category.
+		obj.stylebutton();
 		
 	} // onend
 	
@@ -650,7 +647,9 @@ class variabledrag extends dragnode{
 			
 			let overlap = obj.calculateoverlap(obj.node, container);			
 			if( overlap > 0 ){
-				{
+			
+				// Have to check compatibility also. How to encode this information to the variables already? That's where the categories come from. Should come from the file then, since the categories are hardcoded within it no? 
+				if( obj.isContainerCompatible(container) ){
 					current = container;
 				} // if
 					
@@ -667,6 +666,11 @@ class variabledrag extends dragnode{
 		return current
 		
 	} // currentcontainer
+	
+	isContainerCompatible(container){
+		let obj = this;
+		return obj.node.classList.contains(container.classList[1])
+	} // isContainerCompatible
 	
 	calculateoverlap(a,b){
 		// Calculate hte overlap between nodes `a' and `b'.
@@ -745,6 +749,17 @@ class variabledrag extends dragnode{
 	
 	
 	// Coordinating the containers.
+	stylebutton(){
+		// Make sure that the button has the color it is supposed to have.
+		let obj = this;
+		
+		
+		// Where to get the color from?
+		let currentcategoryname = obj.node.parentElement.classList[1];
+		
+		obj.node.style.backgroundColor = obj.color(currentcategoryname);
+	} // stylebutton
+	
 	stylecontainers(current){
 		// The current container should have its border highlighted, while all the others should have no border.
 		let obj = this;
@@ -760,11 +775,9 @@ class variabledrag extends dragnode{
 		
 	} // stylecontainers
 	
-	trimcontainers(){
-		// If the last element of any container is a ghost element remove it.
-		let obj = this;
+	trimcontainers(containers){
 		
-		obj.containers.forEach(container=>{
+		containers.forEach(container=>{
 			
 			// Loop over the children backwards.
 			let keep = false;
@@ -804,6 +817,11 @@ class variabledrag extends dragnode{
 			// Find all the categories among all the files that need to be coordinated.
 			let categoriesToCoordinate = obj.parent.querySelectorAll(`div.${ categoryname }`);
 			
+			
+			// First trim out all trailing blank spots.
+			obj.trimcontainers( categoriesToCoordinate );
+			
+			
 			// Find the maximum length
 			let n = 0;
 			categoriesToCoordinate.forEach(category=>{
@@ -813,7 +831,7 @@ class variabledrag extends dragnode{
 			
 			// Now force them all to the same length by adding ghost elements in front of the ghost-endstop element.
 			categoriesToCoordinate.forEach(category=>{
-				let k = n - category.children.length - 1;
+				let k = n - category.children.length;
 				let endstop = category.querySelector("button.ghost-endstop");
 				for(let i=0; i<k; i++){
 					category.insertBefore(template.html2element(template.ghostbutton()), endstop);
@@ -830,16 +848,11 @@ class variabledrag extends dragnode{
 
 
 
+// Where to get the compatibility information from. Maybe include it in hte variables themselves? That allows more information to be collected there.
 
 
 
-
-
-
-
-// FUNCTIONALITY
-
-
+// The coordination of merging.
 class metadatamerger {
 	constructor(files){
 		let obj = this;
@@ -876,7 +889,7 @@ class metadatamerger {
 			let draggables = filediv.querySelectorAll("button.draggable");
 			
 			draggables.forEach(draggable=>{
-				new variabledrag(draggable, categories, body);
+				new variabledrag(draggable, categories, body, builder.color);
 			});
 		}); // forEach
 		
@@ -893,11 +906,6 @@ class metadatamerger {
 		*/
 		
 	} // constructor
-	
-	
-
-		
-	
 	
 	show(){
 		let obj = this;		
@@ -929,7 +937,7 @@ class metadatamerger {
 		
 	} // submit
 	
-	
+	// How to keep track of the merging information. It should be redone everytime a new merging file is loaded. Otherwise it should keep track of what the user selected.
 	
 	sortByLoadedMergingInfo(fileobjs, loadedInfo){
 		
@@ -1011,6 +1019,7 @@ class dbsliceFile {
 		
 		
 	} // constructor
+	
 	
 	load(){
 		// Collect the data and perform input testing.
@@ -1449,6 +1458,116 @@ class onDemandFile extends dbsliceFile {
 
 // Array comparison helpers.
 
+// An object containing all the supported variable types, and the tests to properly classify them. The allowable types are those that can come from typeof(test_value). An implementation of a variable type must at least have a "test" function.
+var supportedVariableTypes = {
+	
+	string: {
+		
+		supportedCategories: {
+			string: ["categorical"],
+			datetime: ["categorical", "ordinal"],
+			line2dFile: ["categorical", "line2dFile"],
+			contour2dFile: ["categorical", "contour2dFile"]
+		},
+		
+		test: function(variable, testval, filename){
+			// `variable' needs to be the first input!
+			// Return a promise or a fully classified variable.
+			
+			switch( testval.split(".").pop() ){
+				case "json":
+				case "csv":
+					// Try to classify the testval as a file. The requester is the metadata for which the variables are being classified.
+					let testFile = new onDemandFile({url: testval, filename: testval}, filename);
+					
+					return this.testAsFile(variable, testFile)
+				default:
+					// Unsupported extension.
+					
+					
+					// Try to see if it's a date!
+					
+					
+					return this.defaultclassification(variable)
+			} // switch
+		}, // test
+		
+		
+		defaultclassification(variable){
+			let testobj = this;
+			variable.category = "categorical";
+			variable.type = "string";
+			variable.supportedCategories = testobj.supportedCategories["string"];
+			return variable
+		}, // defaultclassification
+		
+		
+		testAsDate(variable, testval){
+			
+			// How to handle dates actually? categorical/ordinal, datetime/string - has to be specific format - `datetime'. The appropriate format will have to be identified and stored too. Or maybe we should just convert the data as it's loaded? Probably more sensible.
+			
+			let testobj = this;
+			
+			
+			variable.category = "ordinal";
+			variable.type = "datetime";
+			variable.supportedCategories = testobj.supportedCategories["datetime"];
+			return variable
+			
+			
+		}, // testAsDate
+		
+		
+		testAsFile(variable, testFile){
+			// Return fully classified variable object.
+			let testobj = this;
+			
+			testFile.load();
+		
+			// What can go wrong:
+			// file is not found
+			// file has wrong content
+			
+			// Why Promise.all ??
+			
+			// Below 'fileobj' represents 'testFile'.
+			return Promise.all([testFile.promise]).then(function(fileobj){
+				
+				// It's possible that hte file was found and loaded correctly. In that case 'obj.content.format' will contain the name of the file type. Otherwise this field will not be accessible.
+				try {
+					// Category is the categorisation that will actually be used, and type cannot be changed.
+					variable.category = fileobj[0].content.format;
+					variable.type = fileobj[0].content.format;
+					variable.supportedCategories = testobj.supportedCategories[variable.type];
+					return variable
+					
+				} catch {
+					// If the loading failed for whatever reason the variable is retained as a categorical.
+					return testobj.defaultclassification(variable);
+					
+				} // try
+			}) // Promise.all().then
+			
+			
+		} // testAsFile
+		
+		
+	}, // string
+	
+	
+	number: {
+		
+		test: function(variable){
+			variable.category = "ordinal";
+			variable.type = "number";
+			variable.supportedCategories = ["ordinal", "categorical"];
+			return variable
+		} // test
+	}, // number
+	
+}; // supportedVariableTypes
+
+
 
 
 // Maybe move the tests outside?
@@ -1461,7 +1580,7 @@ class metadataFile extends dbsliceFile {
 		let classificationPromise;
 		if(!obj.content.categories){
 			// Launch the variable classification.
-			classificationPromise = obj.classify.all(obj);
+			classificationPromise = obj.classifyvariables();
 		} else { 
 			classificationPromise = Promise.resolve().then(d=>{return obj}); 
 		
@@ -1545,6 +1664,52 @@ class metadataFile extends dbsliceFile {
 	  }, // object
 	  
 	} // structure
+	
+	
+	
+	classifyvariables(){
+		let obj = this;
+		
+		// This already executes in a promise chain, therefore it's not needed to update the obj.promise. The promises created here will be resolved before the overhead promise resolves further.
+		
+		// Create all the testing promises.
+		let testPromises = obj.content.variables.map(function(variable){
+			// Check this column. Variable is now an object!
+			return obj.makeVariableClassificationPromise(obj.filename, obj.content.data, variable)
+		}); // map
+		
+		// Return the final promise.
+		return Promise.all(testPromises)
+			.then(function(variableClassification){
+				// The promises update the variable classification into the file object directly.
+				
+				// obj.content.categories = variableClassification
+				return obj
+			})
+		
+	} // classifyvariables
+	
+	
+	makeVariableClassificationPromise(filename, data, variable){
+		
+		// Retrieve an actual value already.
+		let testrow = dbsliceFile.testrow(data);
+		let testval = testrow.row[variable.name];
+		
+	  
+		// Split the testing as per the variable type received.
+		let testobj = supportedVariableTypes[typeof(testval)];
+		if( testobj ){
+			return testobj.test(variable, testval, filename);
+		} else {
+			// For any variables without dedicated support.
+			variable.category = "unused";
+			variable.type = undefined;
+			variable.supportedCategories = [];
+			return variable
+		} // if
+		
+	} // makeVariableClassificationPromise
   
   
   // The testing suite for this file type.
@@ -1579,134 +1744,10 @@ class metadataFile extends dbsliceFile {
 		
 		
 		
-	}, // content
+	} // content
   
   } // test
   
-  // Methods required for variable classification
-  classify = {
-	  
-	all: function(obj){
-		// This already executes in a promise chain, therefore it's not needed to update the obj.promise. The promises created here will be resolved before the overhead promise resolves further.
-		
-		// Create all the testing promises.
-		let testPromises = obj.content.variables.map(function(variable){
-			// Check this column. Variable is now an object!
-			return obj.classify.variable(obj, variable)
-		});
-		
-		// Return the final promise.
-		return Promise.all(testPromises)
-			.then(function(variableClassification){
-				// The promises update the variable classification into the file object directly.
-				
-				// obj.content.categories = variableClassification
-				return obj
-			})
-			
-		
-		
-		
-		  
-	  }, // all
-	  
-	variable: function(obj, variable){
-		  
-		// Retrieve an actual value already.
-		let testrow = dbsliceFile.testrow(obj.content.data);
-		let testval = testrow.row[variable.name];
-		
-	  
-		// Split the testing as per the variable type received.
-		let promise;
-		switch( typeof(testval) ){
-			case "string":
-				// String can be a file too.
-				variable.type = "string";
-				promise = obj.classify.string(obj, variable, testval);
-				
-			  break;
-			  
-			case "number":
-				variable.category = "ordinal";
-				variable.type = "number";
-				promise = variable;
-				
-			  break;
-			  
-			default:
-				variable.category = "Unused";
-				variable.type = undefined;
-				promise = variable;
-				
-		} // switch
-			
-		return promise
-	  
-	}, // variable
-  
-	string: function(obj, variable, testval){
-		// If the string is a file, load it in to identify it's structure. It's not important which extension the file has, but what is it's internal structure.
-		
-		// 'obj' is needed to construct an on-load response, 'variable' and 'testval' to have the name value pair.  
-		
-		let promise;
-		
-		// Create a new onDemandFile to load in it's contents.
-		
-		
-		switch( testval.split(".").pop() ){
-			case "json":
-			case "csv":
-				// Try to classify the testval as a file. The requester is the metadata for which the variables are being classified.
-				let testFile = new onDemandFile({url: testval, filename: testval}, obj.filename);
-				
-				promise = obj.classify.file(variable, testFile);
-				
-			  break;
-			default:
-				// Unsupported extension.
-				variable.category = "categorical";
-				promise = variable;
-		} // switch
-		
-		
-		return promise
-	  
-	}, // string
-	
-	file: function(variable, testFile){
-		// Make a new generic on-demand file, and return a promise that will return the file type.
-		
-		testFile.load();
-		
-		// What can go wrong:
-		// file is not found
-		// file has wrong content
-		
-		// Below 'obj' represents 'testFile'.
-		return Promise.all([testFile.promise]).then(function(obj){
-			
-			// It's possible that hte file was found and loaded correctly. In that case 'obj.content.format' will contain the name of the file type. Otherwise this field will not be accessible.
-			try {
-				// Category is the categorisation that will actually be used, and type cannot be changed.
-				variable.category = obj[0].content.format;
-				variable.type = obj[0].content.format;
-				return variable
-				
-			} catch {
-				// If the loading failed for whatever reason the variable is retained as a categorical.
-				variable.category = "categorical";
-				return variable
-				
-			} // try
-		})
-		
-		
-	}, // file
-  
-	  
-  } // classify
   
 
   

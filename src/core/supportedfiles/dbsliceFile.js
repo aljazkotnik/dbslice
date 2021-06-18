@@ -34,6 +34,7 @@ export default class dbsliceFile {
 		
 	} // constructor
 	
+	
 	load(){
 		// Collect the data and perform input testing.
 		let obj = this
