@@ -1,5 +1,24 @@
 import {unique} from "./helpers.js";
 import dragnode from "./dragnode.js";
+import metadataFile from "./supportedfiles/metadataFile.js";
+import {makeObservable, observable, autorun, action, computed} from "mobx";
+
+
+
+/*
+When collecting the merge information:
+	The data must be saved per category, and [filename, variable name, and variable alias] triplets. On a variable DOM level the variable and file names must be available. On a category DOM level the category name must be available.
+
+When interacting there are compatibility restrictions (e.g. an ordinal cannot be a url pointing to a 2d line file). Therefore at the variable DOM level the compatibility array for that variable must be accessible, as well as the category info for the categories the variable is being placed into.
+
+When using templates to create the DOM data objects cannot be bound to it using d3. Maybe have a split between the static and dynamic parts of the DOM?
+
+
+
+
+One thought is to also allow only comparable types to be merged. Thisis done by the categories already. Ordinals can only be numbers, for categoricals it doesn't matter, and on-demand variables can only be used for dedicated plots or as categoricals. Therefore it's not necessary to have an additional check.
+
+*/
 
 
 // Declare the necessary css here.
@@ -31,6 +50,7 @@ let css = {
 	  display: block;
 	  cursor: pointer;
 	  position: relative;
+	  white-space: nowrap;
   `,
   
   btnGhost: `
@@ -102,13 +122,27 @@ class template{
 		// Categories should include `unused';
 		obj.categories = unique( categories.concat("unused") );
 
+	
+		obj.node = template.html2element(obj.backbone())
+		obj.update()
 	} // constructor
 	
 	
-	get node(){
+	update(){
+		// The node should stay the same, but the interactive content should be redone.
 		let obj = this;
-		return template.html2element(obj.app())
-	} // node
+		
+		// Update the legend on top.
+		let legend = obj.node.querySelector("div.legend");
+		legend.lastChild.remove();
+		legend.appendChild( template.html2element( obj.legend() ) );
+		
+		// Update the interactive body
+		let body = obj.node.querySelector("div.body");
+		body.lastChild.remove();
+		body.appendChild( template.html2element( obj.interactivecontent() ) );
+		
+	} // update
 	
 	
 	// The color scheme.
@@ -124,23 +158,9 @@ class template{
 	} // color
 	
 
-	app(){
-		
-		/* NEEDED CSS
-			fullscreen-container
-			card 
-			card-menu
-			card-header
-			btn
-			btn-report
-			card-body
-			card-footer
-		*/
-		
-		// this is the template object now.
+	backbone(){
+		// The interactive content goes into `div.body'.
 		let obj = this;
-		
-		
 		return `
 		<div style="${ css.fullscreenContainer + "display: none;"}">
 		<div style="${ css.card }">
@@ -155,31 +175,47 @@ class template{
 			  </div>
 			  
 			  <div class="legend">
-				${ obj.categories.map(d=>obj.legendbutton(d)).join("") }
+			    <div>
+				</div>
 			  </div>
 			  
 			</div>
 		  </div>
 		  
 		  
-		  <div class="body" style="overflow-y: scroll; overflow-x: auto; height: 400px;">
-
-			${ obj.files.map(fileobj=>obj.filecolumn(fileobj)).join("") }
-
+		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px; width: ">
+			<div></div>
 		  </div>
 		  
 		  
 		  
 		  <div>
-			<button class="submit" style="${ css.btn + "background-color: mediumSeaGreen;" }">Submit</button>
+			<button class="submit" style="${ css.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
 		  </div>
 		  
 		</div>
 		</div>`
 		
 	} // app
-
-
+	
+	
+	legend(){
+		let obj = this;
+		return `
+		  <div>
+			${ obj.categories.map(d=>obj.legendbutton(d)).join("") }
+		  </div>
+		`
+	} // legend
+	
+	interactivecontent(){
+		let obj = this;
+		return `
+		  <div>
+			${obj.files.map(fileobj=>obj.filecolumn(fileobj)).join("")}
+		  </div>`;
+	} // interactivecontent
+	
 	filecolumn(fileobj){
 		let obj = this;
 		
@@ -204,7 +240,10 @@ class template{
 		
 		return `
 		  <div style="${ css.divCategoryWrapper }">
-			<div class="category ${ category }" style="${ css.divCategory }">
+			<div class="category ${ category }" 
+			     style="${ css.divCategory }"
+				 ownerfile="${ fileobj.filename }"
+			>
 			  ${ variables.map(variableobj=>obj.draggablebutton(variableobj)).join("") }
 			  
 			  ${
@@ -219,11 +258,11 @@ class template{
 
 
 
-	static button(name, cssstyle, cssclassname){
+	static button(label, cssstyle, cssclassname, variablename){
 		
 		return `
-		  <button class="${cssclassname}" style="${ cssstyle }">
-			<strong>${ name }</strong>
+		  <button class="${cssclassname}" style="${ cssstyle }" variable="${variablename}">
+			<strong>${ label }</strong>
 		  </button>
 		`
 	} // button
@@ -231,9 +270,13 @@ class template{
 
 	draggablebutton(variableobj){
 		let obj = this;
+		
+		let fractionunique = variableobj.nunique == variableobj.n ? "" : `,  ${variableobj.nunique} / ${variableobj.n}`;
+		
+		let label = `${ variableobj.name } (${variableobj.type + fractionunique})`;
 		let cssstyle = css.btnPill + css.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
 		let cssclasses = variableobj.supportedCategories.concat("draggable").join(" ")
-		return template.button(variableobj.name, cssstyle, cssclasses);
+		return template.button(label, cssstyle, cssclasses, variableobj.name);
 	} // draggableButton
 
 	legendbutton(category){
@@ -257,6 +300,9 @@ class template{
 	
 	
 } // template
+
+
+
 
 
 
@@ -531,7 +577,7 @@ class variabledrag extends dragnode{
 
 
 
-// Where to get the compatibility information from. Maybe include it in hte variables themselves? That allows more information to be collected there.
+
 
 
 
@@ -540,55 +586,63 @@ export default class metadatamerger {
 	constructor(files){
 		let obj = this;
 		
-		
-		// It will need to keep track of the files.
+		// It will need to keep track of the files. These will already be metadata files.
 		obj.files = files;
-		
-		
-		// Find which categories are available in the files. Have this as a computed value.
-		obj.categories = unique( files.reduce((acc, fileobj)=>{
-			acc = acc.concat(fileobj.content.variables.map(v=>v.category));
-			return acc
-		}, []) )
-		
-		
-		// Category compatibility.
-		
-		
+				
 		// It will need to keep track of the merging information. Maybe it should be a property of this object actually
-		obj.merging = {};
+		obj.merging = [];
+		
+		
+		// Maje the html builder and get a node to attach to the html app.
+		obj.builder = new template(obj.files, obj.categories);
+		obj.node = obj.builder.node;
+		
+		
+		// Apply the submit functionality.
+		obj.node.querySelector("button.submit").addEventListener("click", ()=>obj.submit())
 		
 		
 		
+		makeObservable(obj, {
+			files: observable,
+			categories: computed,
+			submit: action
+		})
 		
-		let builder = new template(obj.files, obj.categories)
-		obj.node = builder.node;
+		
+		autorun(()=>{
+			obj.update();
+			obj.show();
+		})
+		
+	} // constructor
+	
+	update(){
+		// This should really run automatically....
+		console.log("Update mergerer")
+		
+		let obj = this;
+		
+		// Somehow uncouple the template more. All hte interactive content needs to be updated - including the legend.
+		// Make the builder observe these itself??
+		obj.builder.files = obj.files;
+		obj.builder.categories = obj.categories;
+		obj.builder.update();
 		
 		// Apply the draggable functionality. This should really be applied on a file by file basis.
-		let body = obj.node.querySelector("div.body");
-		let filedivs = obj.node.querySelectorAll("div.file");
+		let body = obj.builder.node.querySelector("div.body");
+		let filedivs = obj.builder.node.querySelectorAll("div.file");
 		filedivs.forEach(filediv=>{
 			let categories = filediv.querySelectorAll("div.category");
 			let draggables = filediv.querySelectorAll("button.draggable");
 			
 			draggables.forEach(draggable=>{
-				new variabledrag(draggable, categories, body, builder.color)
+				new variabledrag(draggable, categories, body, obj.builder.color)
 			})
 		}) // forEach
-		
-		// HOW TO CONSOLIDTE ALL THE categories??
-		
-		// Apply the submit functionality.
-		obj.node.querySelector("button.submit").addEventListener("click", ()=>obj.hide())
-		
-		
-		/*
-		makeObservable(obj, {
-			files: observable
-		})
-		*/
-		
-	} // constructor
+	} // update
+	
+
 	
 	show(){
 		let obj = this;		
@@ -604,69 +658,234 @@ export default class metadatamerger {
 		let obj = this;
 		
 		// Collect the classification from the ui.
-		// let mergerInfo = metadatamerger.collectMergerInfo()
+		obj.merginginfo = obj.collectmerginginfo();
 		
-		// Store this in the session data.
-		// ...
+		obj.hide();
 		
-		// Get the merged data. Maybe the data merger should be performed outside?? That would make more sense maybe?
-		// ...
-		
-		
-		// Change the crossfilter.
-		// ...
-		
-		obj.hide()
+		// Redo the menu for the next appearance.
+		// obj.sortByLoadedMergingInfo(obj.merginginfo);
 		
 	} // submit
 	
 	// How to keep track of the merging information. It should be redone everytime a new merging file is loaded. Otherwise it should keep track of what the user selected.
 	
-	sortByLoadedMergingInfo(fileobjs, loadedInfo){
+	
+	
+	get categories(){
+		let obj = this;
+		return unique( obj.files.reduce((acc, fileobj)=>{
+			acc = acc.concat(fileobj.content.variables.map(v=>v.category));
+			return acc
+		}, []) )
+	} // categories
+	
+	collectmerginginfo(){
+		// Collect the merging info by looping over the identified categories and comparing the elements in the same position.
+		let obj = this;
 		
-		// HOW TO MAKE THEM MISMATCH ANY NON-MATCHED VARIABLES? PUSH GHOST OBJS BETWEEN??
-		// FIRST FOCUS ON MAKING EVERYTHING ELSE WORK
+		// MAYBE IT SHOULDNT BE A MAP
+		let info = obj.categories.reduce( (acc,category) => {
+			// Collect the DOM containers.
+			let categorydivs = obj.node.querySelectorAll(`div.${ category }`);
+			
+			// Compare the children. They should all have the same number of them. Calculate the minimum just in case.
+			let n = Number.POSITIVE_INFINITY;
+			categorydivs.forEach(node=>{
+				n = node.children.length < n ? node.children.length : n;
+			}) // forEach
+			
+			
+			// Loop over children.
+			let categoryInfo = [];
+			for(let i=0; i<n; i++){
+				
+				let comparableVariables = obj.collectComparableVariableRow(categorydivs, i)
+				
+				// If the merging was valid, then attach it to the info object.
+				if( comparableVariables ){
+					// This now needs to store the file name, variable name, and the variable merged alias.
+					let variableAlias = comparableVariables[0].name;
+					
+					comparableVariables.forEach(variableobj=>{
+						variableobj.category = category;
+						variableobj.alias = variableAlias;
+					}) // forEach
+					
+					// Filenames can have `.` or `\` in the filename. How to store the merged information in that case? Special objects like: {filename: ``, variable}
+					categoryInfo = categoryInfo.concat(comparableVariables);
+				} // if
+				
+			} // for
+			
+			// Only do this if categoryInfo has some information.
+			if( categoryInfo.length > 0 ){
+				acc = acc.concat( categoryInfo );
+			} // if
+			
+			return acc;
+		}, []) // reduce
+		
+		return info;
+		
+	} // collectmerginginfo
+	
+	
+	collectComparableVariableRow(categorydivs, i){
+		
+		// Collect children in comparable positions.
+		let comparablevariables = []
+		
+		// forEach does not allow a `break`.
+		for( let categorynode of categorydivs ){
+			
+		  let variablenode = categorynode.children[i];
+			
+		  if(variablenode.classList.contains("ghost")){
+			comparablevariables = undefined;
+			break;
+		  } else {
+			comparablevariables.push( {
+			  filename: categorynode.attributes.ownerfile.value,
+				  name: variablenode.attributes.variable.value
+			} );	
+		  } // if
+		  
+		} // for
+		
+		return comparablevariables;
+	} // collectComparableVariableRow
+	
+	
+	
+	// How to sort the variables given some merging data? They will have to be ordered in the data itself.
+	
+	sortByLoadedMergingInfo(mergingInfo){
+		// Establish the order by sorting the variables within their fileobjects. Mismatched variables should just be put at the end? But what if several files have mismatching variables? Move them into unused?
+		
+		// Ok, but then first loop through all the keys of the merging info, find those that aren't decalred, change their category to unused, and then continue.
+		
+		
+		// Loop over the files and check what has been declared. Anything undeclared is moved to unused.
+		
+		
+		let obj = this;
+		
+		
+		
+		// Create an alias order object that can be used for ordering.
+		let declaredAliases = unique( mergingInfo.map(mergeentry=>mergeentry.alias) );
+		
+		
+		// Variable name to alias ->
+		
 		
 		// How to make sure that only items that are fully declared are being used?? Filter out the things that are not needed??
 		
 		// Reorder the variables in the categories.
-		fileobjs.forEach(function(fileobj){
-			fileobj.categories.forEach(function(catobj){
-				
-				
-				let mergedItems = loadedInfo[catobj.category]
-				if(mergedItems){
-					
-				
-					// Create the reordering dict.
-					let ind = {}
-					Object.getOwnPropertyNames( mergedItems ).forEach(function(varname, pos){
-						let nameInTheFile = mergedItems[varname][fileobj.filename]
-						ind[nameInTheFile] = pos
-					})
-					
-					// How to manage this sorting so that all the sosrts are respected? How to make sure that the values are placed exactly in the spots required. Maybe simply creating a new array would be better??
-					catobj.sort(function(a,b){
-		
-						let aval = typeof( ind[a.variable.name] ) == "number" ? ind[a.variable.name] : Number.POSITIVE_INFINITY
-						let bval = typeof( ind[b.variable.name] ) == "number" ? ind[b.variable.name] : Number.POSITIVE_INFINITY
-								
-						let val = isNaN( aval - bval ) ? 0 : aval - bval
-								
-						return val
-					})
-				
-				
+		obj.files.forEach(function(fileobj){
+			
+			
+			let declaredVariables = mergingInfo.filter(mergeentry=>{
+				return mergeentry.filename == fileobj.filename
+			}) // filter
+			
+			
+			// Create a variable2alias array.
+			let variablename2alias = declaredVariables.reduce((a,variable)=>{
+				a[variable.name] = variable.alias;
+				return a
+			},{}); // reduce
+			
+			
+			// Loop over the variables and have those that are not declared moved to unused.
+			fileobj.content.variables.forEach(variableobj=>{
+				let declared = declaredVariables.filter(declaredobj=>declaredobj.name == variableobj.name);
+				if( declared.length != 1 ){
+					// Undeclared variables are considered unused.
+					variableobj.category = "unused";
+				} else {
+					// Declared variables may have to be moved to a different category.
+					variableobj.category = declared[0].category;
 				} // if
-				
 			}) // forEach
+			
+			// Now sort by category name. How to find position within category?
+			
+			// Just
+			
+			fileobj.content.variables.sort(function (x, y) { 
+				// Just sort them in here. First sort by category, and then sort by the prescribed order value.
+				
+				// The variables in content don't have aliases, because they don't need them. Aliases are just secondary names that allow connection of primary variable names.
+				let categorysort = ("" + x.category).localeCompare(y.category);
+				let variablesort = declaredAliases.indexOf(variablename2alias[x.name]) - declaredAliases.indexOf(variablename2alias[y.name]);
+				
+				return categorysort || variablesort ; 
+			})
+			
+			
 		}) // forEach
-		
-		
-		return fileobjs
 		
 	} // sortByLoadedMergingInfo
 	
 		
 } // metadatamerger
-	
+
+
+
+
+
+
+// Testing data.
+
+
+// Any loaded merging data will have to be checked to make sure that the aliases are unique, they point to unique variables, not two variables from the same file point to the same alias.
+
+
+
+var mergingtestinfo = [
+{"filename": "./data/m_c3s_0.csv", "name": "taskId", "category": "categorical", "alias": "taskId"},
+{"filename": "./data/m_c3s_1.csv", "name": "taskId", "category": "categorical", "alias": "taskId"},
+{"filename": "./data/m_c3s_0.csv", "name": "label", "category": "categorical", "alias": "label"},
+{"filename": "./data/m_c3s_1.csv", "name": "label", "category": "categorical", "alias": "label"},
+{"filename": "./data/m_c3s_0.csv", "name": "categorical_1", "category": "categorical", "alias": "categorical_1"},
+{"filename": "./data/m_c3s_1.csv", "name": "c_Design", "category": "categorical", "alias": "categorical_1"},
+{"filename": "./data/m_c3s_0.csv", "name": "categorical_2", "category": "categorical", "alias": "categorical_2"},
+{"filename": "./data/m_c3s_1.csv", "name": "c_Speed", "category": "categorical", "alias": "categorical_2"},
+{"filename": "./data/m_c3s_0.csv", "name": "categorical_3", "category": "categorical", "alias": "categorical_3"},
+{"filename": "./data/m_c3s_1.csv", "name": "c_Factor Name", "category": "categorical", "alias": "categorical_3"},
+{"filename": "./data/m_c3s_0.csv", "name": "categorical_4", "category": "categorical", "alias": "categorical_4"},
+{"filename": "./data/m_c3s_1.csv", "name": "c_Factor Value", "category": "categorical", "alias": "categorical_4"},
+{"filename": "./data/m_c3s_0.csv", "name": "ordinal_1", "category": "ordinal", "alias": "ordinal_1"},
+{"filename": "./data/m_c3s_1.csv", "name": "o_Efficiency", "category": "ordinal", "alias": "ordinal_1"},
+{"filename": "./data/m_c3s_0.csv", "name": "ordinal_2", "category": "ordinal", "alias": "ordinal_2"},
+{"filename": "./data/m_c3s_1.csv", "name": "o_Mass flow", "category": "ordinal", "alias": "ordinal_2"},
+{"filename": "./data/m_c3s_0.csv", "name": "ordinal_3", "category": "ordinal", "alias": "ordinal_3"},
+{"filename": "./data/m_c3s_1.csv", "name": "o_Pressure ratio", "category": "ordinal", "alias": "ordinal_3"},
+{"filename": "./data/m_c3s_0.csv", "name": "ordinal_4", "category": "ordinal", "alias": "ordinal_4"},
+{"filename": "./data/m_c3s_1.csv", "name": "o_fakePressure", "category": "ordinal", "alias": "ordinal_4"},
+{"filename": "./data/m_c3s_0.csv", "name": "s_rotor1", "category": "line2dFile", "alias": "s_rotor1"},
+{"filename": "./data/m_c3s_1.csv", "name": "s_rotor1", "category": "line2dFile", "alias": "s_rotor1"},
+{"filename": "./data/m_c3s_0.csv", "name": "s_rotor2", "category": "line2dFile", "alias": "s_rotor2"},
+{"filename": "./data/m_c3s_1.csv", "name": "s_rotor2", "category": "line2dFile", "alias": "s_rotor2"},
+{"filename": "./data/m_c3s_0.csv", "name": "s_rotor3", "category": "line2dFile", "alias": "s_rotor3"},
+{"filename": "./data/m_c3s_1.csv", "name": "s_rotor3", "category": "line2dFile", "alias": "s_rotor3"},
+{"filename": "./data/m_c3s_0.csv", "name": "s_stator1", "category": "line2dFile", "alias": "s_stator1"},
+{"filename": "./data/m_c3s_1.csv", "name": "s_stator1", "category": "line2dFile", "alias": "s_stator1"},
+{"filename": "./data/m_c3s_0.csv", "name": "s_stator2", "category": "line2dFile", "alias": "s_stator2"},
+{"filename": "./data/m_c3s_1.csv", "name": "s_stator2", "category": "line2dFile", "alias": "s_stator2"},
+{"filename": "./data/m_c3s_0.csv", "name": "s_stator3", "category": "line2dFile", "alias": "s_stator3"},
+{"filename": "./data/m_c3s_1.csv", "name": "s_stator3", "category": "line2dFile", "alias": "s_stator3"},
+{"filename": "./data/m_c3s_0.csv", "name": "c2d_rotor1_exit", "category": "contour2dFile", "alias": "c2d_rotor1_exit"},
+{"filename": "./data/m_c3s_1.csv", "name": "c2d_rotor1_exit", "category": "contour2dFile", "alias": "c2d_rotor1_exit"},
+{"filename": "./data/m_c3s_0.csv", "name": "c2d_rotor2_exit", "category": "contour2dFile", "alias": "c2d_rotor2_exit"},
+{"filename": "./data/m_c3s_1.csv", "name": "c2d_rotor2_exit", "category": "contour2dFile", "alias": "c2d_rotor2_exit"},
+{"filename": "./data/m_c3s_0.csv", "name": "c2d_rotor3_exit", "category": "contour2dFile", "alias": "c2d_rotor3_exit"},
+{"filename": "./data/m_c3s_1.csv", "name": "c2d_rotor3_exit", "category": "contour2dFile", "alias": "c2d_rotor3_exit"},
+{"filename": "./data/m_c3s_0.csv", "name": "c2d_stator1_exit", "category": "contour2dFile", "alias": "c2d_stator1_exit"},
+{"filename": "./data/m_c3s_1.csv", "name": "c2d_stator1_exit", "category": "contour2dFile", "alias": "c2d_stator1_exit"},
+{"filename": "./data/m_c3s_0.csv", "name": "c2d_stator2_exit", "category": "contour2dFile", "alias": "c2d_stator2_exit"},
+{"filename": "./data/m_c3s_1.csv", "name": "c2d_stator2_exit", "category": "contour2dFile", "alias": "c2d_stator2_exit"},
+{"filename": "./data/m_c3s_0.csv", "name": "c2d_stator3_exit", "category": "contour2dFile", "alias": "c2d_stator3_exit"},
+{"filename": "./data/m_c3s_1.csv", "name": "c2d_stator3_exit", "category": "contour2dFile", "alias": "c2d_stator3_exit"}
+]

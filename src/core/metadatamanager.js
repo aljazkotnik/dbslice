@@ -12,6 +12,8 @@ import {makeObservable, observable, computed, autorun, action} from "mobx";
 // External module to handle the filtering.
 import filtermanager from "./filtermanager.js";
 
+import metadatamerger from "./metadatamerger.js";
+
 
 
 // Turn cfDataManager into a class. Make it reactive if needed. Make sure it uses the devDependency of crossfilter.
@@ -86,10 +88,13 @@ export default class metadatamanager {
 		
 		obj.filter = new filtermanager();
 		
+		
+		
+		
 
 		// Merging progressively stores the users inputs on how to merge the metadata.
-		obj.merging = {}; 
-		
+		obj.mergerer = new metadatamerger( obj.metadatafiles ); 
+		obj.node = obj.mergerer.node;
 		
 		
 		
@@ -98,6 +103,8 @@ export default class metadatamanager {
 			metadatafiles: computed
         })
 		
+		
+		autorun(()=>{console.log("Update Metadata Manager!!", obj.metadatafiles)})
 		
 		
 	} // constructor

@@ -51,7 +51,7 @@ export default class dbsliceFile {
 					  
 					// Don't directly filter, but instead just remove lines until the first one without a '#'.
 					for(let i=0; i<text_.length; i++){
-						if(text_[0].startsWith("#")){
+						if(text_[0].startsWith("#") || text_[0].startsWith(`\"#`)){
 							text_.splice(0,1)
 						} else {
 							break;

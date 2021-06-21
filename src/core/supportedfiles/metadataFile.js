@@ -1,5 +1,5 @@
 // Array comparison helpers.
-import {arrayEqual} from "../helpers.js";
+import {arrayEqual, unique} from "../helpers.js";
 
 // Superclass
 import dbsliceFile from "./dbsliceFile.js";
@@ -29,7 +29,7 @@ var supportedVariableTypes = {
 			switch( testval.split(".").pop() ){
 				case "json":
 				case "csv":
-					// Try to classify the testval as a file. The requester is the metadata for which the variables are being classified.
+					// Try to classify the testval as a file. The requester is the metadata file for which the variables are being classified.
 					let testFile = new onDemandFile({url: testval, filename: testval}, filename)
 					
 					return this.testAsFile(variable, testFile)
@@ -122,6 +122,10 @@ var supportedVariableTypes = {
 
 
 
+// Maybe I can even move the structure outside here, and remove the need for the static variable?
+
+
+
 
 // Maybe move the tests outside?
 export default class metadataFile extends dbsliceFile {
@@ -129,17 +133,8 @@ export default class metadataFile extends dbsliceFile {
 	onload(obj){
 		// This executes in a promise chain, therefore the overhead promise will wait until thiss is fully executed.
 		
-		// Check if suitable categories have already been declared.
-		let classificationPromise
-		if(!obj.content.categories){
-			// Launch the variable classification.
-			classificationPromise = obj.classifyvariables();
-		} else { 
-			classificationPromise = Promise.resolve().then(d=>{return obj}); 
-		
-		}// if 
-		
-		// To ensure that the classification is included into the loading promise chain a promise must be returned here. This promise MUST return obj. 'classify.all' returns a promise, which returns the object with the classified variables.
+		// The classification is forced now, as categories data is not used anymore. To ensure that the classification is included into the loading promise chain a promise must be returned here. This promise MUST return obj. 'classify.all' returns a promise, which returns the object with the classified variables.
+		let classificationPromise = obj.classifyvariables();
 		return classificationPromise
 		
 	} // onload
@@ -167,9 +162,13 @@ export default class metadataFile extends dbsliceFile {
 		  // Data values need to be converted to numbers. Convert the 'variables' into objects?
 		  content_ = {
 			  variables: content.columns.map(function(d){
-				  return {name: d, 
-					  category: undefined,
-						  type: undefined}
+				  return {
+					name     : d, 
+					category : undefined,
+					type     : undefined,
+					nunique  : unique( content.map(row=>row[d]) ).length,
+					n: content.length
+				  }
 			  }),
 			  data: dbsliceFile.convertNumbers( content ),
 		  }
@@ -194,21 +193,7 @@ export default class metadataFile extends dbsliceFile {
 						  type: undefined}
 			  }),
 			  data: content.data,
-		  }
-			  
-		  // Check if declared variables contain all variables in the data.
-		  let allVariablesDeclared = arrayEqual(
-				metadataFile.cat2var(content.header).map(d=>d.name),
-				content_.variables.map(d=>d.name)
-		  )
-		  
-		  // All variables are declared, but have they been declared in the right categories??
-		  
-		  if(allVariablesDeclared){
-			  // All variables have been declared. The categories can be assigned as they are.
-			  content_.variables = metadataFile.cat2var(content.header)
-			  
-		  } // if
+		  } // content_
 		  
 		  metadataFile.test.content(content_)
 		  
@@ -303,37 +288,5 @@ export default class metadataFile extends dbsliceFile {
   
   
 
-  
-  // Where is this used??
-  static cat2var(categories){
-	  // If categories are given, just report the categorisation. But do check to make sure all of the variables are in the categories!! What to do with label and taskId??
-	  
-	  let variables = []
-	  let declaredVariables
-	  
-	  Object.getOwnPropertyNames(categories)
-		.forEach(function(category){
-		  if(categoryInfo.supportedCategories.includes(category)){
-			  declaredVariables = categories[category].map(
-				function(d){
-					return {name: d, 
-						category: category,
-							type: categoryInfo.cat2type[category]}
-				})
-				
-			  variables = variables.concat(declaredVariables)  
-		  } // if
-		  
-		})
-	  
-	  // Check that all hte variables are declared!
-	  
-	  return variables
-	  
-  } // category2variable
-  
-  
-
-  
   
 } // metadataFile

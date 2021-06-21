@@ -25,6 +25,11 @@
 
 
 <body>
+
+  <!-- `pointer-events: none;` is crucial to allow functionality through -->
+  <div id="dragAndDrop" style="position: fixed; top: 0px; left: 0px; height: 100%; width: 100%; z-index: -1;"></div>
+
+
   <div id="app">
     <h1>App</h1>
     <button id="session" class="btn-small">Session</button>
@@ -43,6 +48,9 @@
   
   <!-- Containers for variable handling and loading reports. NOTE: it is important that the report container is below the merging container!! -->
   <div id="fullscreen-menu-container"></div>
+  
+  
+  
   
   
   <!-- Run the bundled script -->

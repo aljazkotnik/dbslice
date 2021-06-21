@@ -62,7 +62,6 @@ export default class filelibrary {
 	} // single
 	
 	
-	
 	// THE ANONYMOUS FUNCTION MUST BE THE `ACTION'. REWORK
 	store(fileobj){
 		let obj = this;
@@ -72,6 +71,7 @@ export default class filelibrary {
 			// Other files should be stored if they have any content.
 			if( fileobj.content ){
 				// Successfuly loaded files.
+				obj.required.push(fileobj.filename)
 				obj.files.push(fileobj)
 			} else {
 				// Errors were incurred.
@@ -115,7 +115,7 @@ export default class filelibrary {
 		
 		// But for that it must have access to the filtered tasks, as well as the plots. Maybe there should just be a collection point into which the plots submit their requests, and the library then responds. And when the plots required files change, that would update.
 		let obj = this;
-		
+				
 		let filesForRemoval = obj.files.filter(function(file){
 			return !obj.required.includes(file.filename)
 		}) // filter

@@ -8,7 +8,7 @@ import sessionFile from "./sessionFile.js";
 
 // `userFile' supports the drag-and-drop functionality. The app has no way of knowing up-fron whether the dropped file is a metadata file or a session configuration file. It can test it to see which type it is, but for that the file needs to be loaded already. The `userFile' provides the initial loading infrastructure and the testing framework to identify the file types, and mutate the loaded files to the appropriate formats.
 
-export class userFile extends dbsliceFile {
+export default class userFile extends dbsliceFile {
 		
 	onload(obj){
 		
@@ -20,10 +20,7 @@ export class userFile extends dbsliceFile {
 				mutatedobj = new metadataFile(obj)
 				
 				mutatedobj.content = obj.content
-				mutatedobj.promise = obj.promise
-				
-				// Also need to classify...
-				mutatedobj = mutatedobj.classify.all(mutatedobj)
+				mutatedobj.promise = mutatedobj.classifyvariables();
 				
 			  break;
 			case "sessionFile":
@@ -36,7 +33,7 @@ export class userFile extends dbsliceFile {
 			  break;
 		  } // switch
 		
-		return mutatedobj
+		return mutatedobj.promise
 		
 	} // onload
 	

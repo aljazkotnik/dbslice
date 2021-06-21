@@ -28,11 +28,8 @@ export default class sessionFile extends dbsliceFile {
 			
 			// What happens when there is no sessionInfo, or nop merging info? Shouldn't it just throw an error??
 			
-			// Prune away anything that is not in line with the expected structure. Using map creates an array, but it should instead remain an object!!
-			let mergingInfo = categoryInfo.supportedCategories.reduce(function(dict, category){
-				dict[category] = content.mergingInfo[category]
-				return dict
-			}, {}) // map
+			// Prune away anything that is not in line with the expected structure. This means categories need to be established ahead of time.
+			let mergingInfo = content.mergingInfo;
 			
 			
 			// There are some attributes that the sessionInfo section must have:
