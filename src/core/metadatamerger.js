@@ -59,32 +59,7 @@ let css = {
 	  background-color: gainsboro;
 	  pointer: default;
   `,
-
-  
-  fullscreenContainer: `
-	  position: fixed;
-	  top: 0;
-	  bottom: 0;
-	  left: 0;
-	  right: 0;
-	  background: rgba(90, 90, 90, 0.5);
-  `,
-  
-  card: `
-	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	  transition: 0.3s;
-	  border-radius: 5px;
-	  background-color: gainsboro;
-	  width: 80%;
-	  max-height: 90%;
-	  margin-left: auto;
-	  margin-right: auto;
-	  margin-top: 40px;
-	  padding: 4px;
-  `,
-  
-
-	
+ 
   divFileColumn: `
 	  display: table-cell;
 	  vertical-align: top;
@@ -142,6 +117,9 @@ class template{
 		body.lastChild.remove();
 		body.appendChild( template.html2element( obj.interactivecontent() ) );
 		
+		// Control the heights.
+		template.coordinateFileDivs(obj.node);
+		
 	} // update
 	
 	
@@ -162,39 +140,21 @@ class template{
 		// The interactive content goes into `div.body'.
 		let obj = this;
 		return `
-		<div style="${ css.fullscreenContainer + "display: none;"}">
-		<div style="${ css.card }">
-		  <div>
-			<div>
-			  
-			  <div>
-				<h2 style="display: inline;">Metadata merging:</h2>
-				<button style="${ css.btn + "float: right;" }">
-				  <i class="fa fa-exclamation-triangle"></i>
-				</button>
-			  </div>
-			  
-			  <div class="legend">
-			    <div>
-				</div>
-			  </div>
-			  
+		<div>
+		  <div class="legend">
+		    <div>
 			</div>
 		  </div>
-		  
-		  
+		 
 		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
 			<div></div>
 		  </div>
 		  
-		  
-		  
 		  <div>
 			<button class="submit" style="${ css.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
 		  </div>
-		  
-		</div>
-		</div>`
+		</div>  
+		`
 		
 	} // app
 	
@@ -300,6 +260,79 @@ class template{
 	} // html2element
 	
 	
+	
+	
+	// Coordinate category container heights.
+	
+	
+	static trimcontainers(containers){
+		// If the last element of any container is a ghost element remove it.
+		containers.forEach(container=>{
+			
+			// Loop over the children backwards.
+			let keep = false;
+			for(let i=container.children.length-1; i>-1; i--){
+				// The first button that is not a ghost triggers all the others to be kept.
+				let testelement = container.children[i];
+				let testclass = testelement.classList
+				
+				// Don't test if it's the stopend.
+				if( !testclass.contains("ghost-endstop") ){
+					keep = testclass.contains("ghost") ? keep : true;
+					if(!keep){
+						container.removeChild(testelement);
+					} // if
+				} // if
+			} // for
+			
+		}) // forEach
+		
+	} // trimcontainers
+	
+	static coordinateFileDivs(parent){
+		// All filedivs will have the same number of categories. Just make sure that all comparable categories have the same number of elements within them.
+		
+		let containers = parent.querySelectorAll("div.category")
+		
+		// Get all the categories.
+		let categorynames = [];
+		containers.forEach(category=>{
+			categorynames = categorynames.concat( category.classList.value.split(" ") );
+		});
+		categorynames = unique( categorynames );
+		
+		 
+		categorynames.forEach(categoryname=>{
+			// Find all the categories among all the files that need to be coordinated.
+			let categoriesToCoordinate = parent.querySelectorAll(`div.${ categoryname }`);
+			
+			
+			// First trim out all trailing blank spots.
+			template.trimcontainers( categoriesToCoordinate );
+			
+			
+			// Find the maximum length
+			let n = 0;
+			categoriesToCoordinate.forEach(category=>{
+				n = category.children.length > n ? category.children.length : n;
+			}) // forEach
+			
+			
+			// Now force them all to the same length by adding ghost elements in front of the ghost-endstop element.
+			categoriesToCoordinate.forEach(category=>{
+				let k = n - category.children.length;
+				let endstop = category.querySelector("button.ghost-endstop")
+				for(let i=0; i<k; i++){
+					category.insertBefore(template.html2element(template.ghostbutton()), endstop)
+				} // for
+			}) // forEach
+			
+		}) // forEach
+		
+		
+	} // coordinateFileDivs
+
+	
 } // template
 
 
@@ -353,7 +386,7 @@ class variabledrag extends dragnode{
 		obj.stylecontainers();
 		
 		// Make sure the categories of all files maintain consistent heights, and are as short as possible.
-		obj.coordinateFileDivs();
+		template.coordinateFileDivs(obj.parent);
 		
 		// Change the color of the variable to match its new category.
 		obj.stylebutton();
@@ -500,76 +533,8 @@ class variabledrag extends dragnode{
 		
 	} // stylecontainers
 	
-	trimcontainers(containers){
-		// If the last element of any container is a ghost element remove it.
-		let obj = this;
-		
-		containers.forEach(container=>{
-			
-			// Loop over the children backwards.
-			let keep = false;
-			for(let i=container.children.length-1; i>-1; i--){
-				// The first button that is not a ghost triggers all the others to be kept.
-				let testelement = container.children[i];
-				let testclass = testelement.classList
-				
-				// Don't test if it's the stopend.
-				if( !testclass.contains("ghost-endstop") ){
-					keep = testclass.contains("ghost") ? keep : true;
-					if(!keep){
-						container.removeChild(testelement);
-					} // if
-				} // if
-			} // for
-			
-		}) // forEach
-		
-	} // trimcontainers
 	
-	coordinateFileDivs(){
-		// All filedivs will have the same number of categories. Just make sure that all comparable categories have the same number of elements within them.
 		
-		let obj = this;
-		
-		
-		// Get all the categories.
-		let categorynames = [];
-		obj.containers.forEach(category=>{
-			categorynames = categorynames.concat( category.classList.value.split(" ") );
-		});
-		categorynames = unique( categorynames );
-		
-		 
-		categorynames.forEach(categoryname=>{
-			// Find all the categories among all the files that need to be coordinated.
-			let categoriesToCoordinate = obj.parent.querySelectorAll(`div.${ categoryname }`);
-			
-			
-			// First trim out all trailing blank spots.
-			obj.trimcontainers( categoriesToCoordinate );
-			
-			
-			// Find the maximum length
-			let n = 0;
-			categoriesToCoordinate.forEach(category=>{
-				n = category.children.length > n ? category.children.length : n;
-			}) // forEach
-			
-			
-			// Now force them all to the same length by adding ghost elements in front of the ghost-endstop element.
-			categoriesToCoordinate.forEach(category=>{
-				let k = n - category.children.length;
-				let endstop = category.querySelector("button.ghost-endstop")
-				for(let i=0; i<k; i++){
-					category.insertBefore(template.html2element(template.ghostbutton()), endstop)
-				} // for
-			}) // forEach
-			
-		}) // forEach
-		
-		
-	} // coordinateFileDivs
-	
 } // variabledrag
 
 
@@ -581,10 +546,7 @@ export default class metadatamerger {
 		
 		// It will need to keep track of the files. These will already be metadata files.
 		obj.files = files;
-				
-		// It will need to keep track of the merging information. Maybe it should be a property of this object actually
-		obj.merging = [];
-		
+		obj.merginginfo = [];
 		
 		// Maje the html builder and get a node to attach to the html app.
 		obj.builder = new template(obj.files, obj.categories);
@@ -598,17 +560,21 @@ export default class metadatamerger {
 		
 		makeObservable(obj, {
 			files: observable,
+			merginginfo: observable,
 			categories: computed,
+			updatefiles: action,
 			submit: action
 		})
 		
 		
-		autorun(()=>{
-			obj.update();
-			obj.show();
-		})
+		autorun(()=>{obj.update()})
 		
 	} // constructor
+	
+	updatefiles(files){
+		let obj = this;
+		obj.files = files;
+	} // updatefiles
 	
 	update(){
 		let obj = this;
@@ -617,6 +583,14 @@ export default class metadatamerger {
 		// Make the builder observe these itself??
 		obj.builder.files = obj.files;
 		obj.builder.categories = obj.categories;
+		
+		// If htere is merging info available, then apply it.
+		/*
+		if(obj.merginginfo){
+			obj.sortByLoadedMergingInfo(obj.merginginfo)
+		} // if
+		*/
+		
 		obj.builder.update();
 		
 		// Apply the draggable functionality. This should really be applied on a file by file basis.
@@ -634,26 +608,12 @@ export default class metadatamerger {
 	
 
 	
-	show(){
-		let obj = this;		
-		obj.node.style.display = "";
-	} // show
-	
-	hide(){
-		let obj = this;
-		obj.node.style.display = "none";
-	} // hide
-	
 	submit(){
 		let obj = this;
 		
 		// Collect the classification from the ui.
 		obj.merginginfo = obj.collectmerginginfo();
 		
-		obj.hide();
-		
-		// Redo the menu for the next appearance.
-		// obj.sortByLoadedMergingInfo(obj.merginginfo);
 		
 	} // submit
 	

@@ -3,9 +3,10 @@
 
 // How to create
 import dbslicefilelibrary from "./core/dbslicefilelibrary.js";
-import metadatamerger from "./core/metadatamerger.js";
-import errorreport from "./core/errorreport.js";
 
+// import metadatamerger from "./core/metadatamerger.js";
+// import errorreport from "./core/errorreport.js";
+import metadatamanager from "./core/metadatamanager.js";
 
 let fullscreenMenusContainer = document.getElementById("fullscreen-menu-container");
 
@@ -20,7 +21,7 @@ target.ondrop = (ev)=>{library.ondrop(ev)};
 target.ondragover = (ev)=>{library.ondragover(ev)};
 
 
-
+/*
 
 // HERE IM ASSUMING ALL THE FILES IN THE LIBRARY ARE METADATA FILES!
 // Maybe this should be wrapped in hte metadataManager anyway. It's all in hte pipeline.
@@ -50,9 +51,12 @@ let errorfiles = [
 let errorreporter = new errorreport(errorfiles);
 fullscreenMenusContainer.appendChild(errorreporter.node);
 
+*/
 
 
+let M = new metadatamanager(library.files);
+fullscreenMenusContainer.appendChild(M.node);
 
 
-
+console.log(M)
 

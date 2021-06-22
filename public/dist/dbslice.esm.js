@@ -1,5 +1,6 @@
 import { makeObservable, action, observable, autorun, computed } from 'mobx';
 import 'd3-time-format';
+import 'crossfilter';
 import * as d3$1 from 'd3';
 
 // Arrays
@@ -1395,7 +1396,7 @@ One thought is to also allow only comparable types to be merged. Thisis done by 
 
 
 // Declare the necessary css here.
-let css$1 = {
+let css$2 = {
   btn: `
 	  border: none;
 	  border-radius: 12px;
@@ -1432,32 +1433,7 @@ let css$1 = {
 	  background-color: gainsboro;
 	  pointer: default;
   `,
-
-  
-  fullscreenContainer: `
-	  position: fixed;
-	  top: 0;
-	  bottom: 0;
-	  left: 0;
-	  right: 0;
-	  background: rgba(90, 90, 90, 0.5);
-  `,
-  
-  card: `
-	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	  transition: 0.3s;
-	  border-radius: 5px;
-	  background-color: gainsboro;
-	  width: 80%;
-	  max-height: 90%;
-	  margin-left: auto;
-	  margin-right: auto;
-	  margin-top: 40px;
-	  padding: 4px;
-  `,
-  
-
-	
+ 
   divFileColumn: `
 	  display: table-cell;
 	  vertical-align: top;
@@ -1483,7 +1459,7 @@ let css$1 = {
 
 
 // The html constructor
-class template$1{
+class template$2{
 	
 	constructor(files, categories){
 		let obj = this;
@@ -1496,7 +1472,7 @@ class template$1{
 		obj.categories = unique( categories.concat("unused") );
 
 	
-		obj.node = template$1.html2element(obj.backbone());
+		obj.node = template$2.html2element(obj.backbone());
 		obj.update();
 	} // constructor
 	
@@ -1508,12 +1484,15 @@ class template$1{
 		// Update the legend on top.
 		let legend = obj.node.querySelector("div.legend");
 		legend.lastChild.remove();
-		legend.appendChild( template$1.html2element( obj.legend() ) );
+		legend.appendChild( template$2.html2element( obj.legend() ) );
 		
 		// Update the interactive body
 		let body = obj.node.querySelector("div.body");
 		body.lastChild.remove();
-		body.appendChild( template$1.html2element( obj.interactivecontent() ) );
+		body.appendChild( template$2.html2element( obj.interactivecontent() ) );
+		
+		// Control the heights.
+		template$2.coordinateFileDivs(obj.node);
 		
 	} // update
 	
@@ -1533,39 +1512,21 @@ class template$1{
 
 	backbone(){
 		return `
-		<div style="${ css$1.fullscreenContainer + "display: none;"}">
-		<div style="${ css$1.card }">
-		  <div>
-			<div>
-			  
-			  <div>
-				<h2 style="display: inline;">Metadata merging:</h2>
-				<button style="${ css$1.btn + "float: right;" }">
-				  <i class="fa fa-exclamation-triangle"></i>
-				</button>
-			  </div>
-			  
-			  <div class="legend">
-			    <div>
-				</div>
-			  </div>
-			  
+		<div>
+		  <div class="legend">
+		    <div>
 			</div>
 		  </div>
-		  
-		  
+		 
 		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
 			<div></div>
 		  </div>
 		  
-		  
-		  
 		  <div>
-			<button class="submit" style="${ css$1.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
+			<button class="submit" style="${ css$2.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
 		  </div>
-		  
-		</div>
-		</div>`
+		</div>  
+		`
 		
 	} // app
 	
@@ -1575,7 +1536,7 @@ class template$1{
 		let obj = this;
 		return `
 		  <div>
-			${ obj.categories.length > 0 ? obj.categories.map(d=>obj.legendbutton(d)).join("") : template$1.ghostbutton() }
+			${ obj.categories.length > 0 ? obj.categories.map(d=>obj.legendbutton(d)).join("") : template$2.ghostbutton() }
 		  </div>
 		`
 	} // legend
@@ -1592,7 +1553,7 @@ class template$1{
 		let obj = this;
 		
 		return `
-		  <div class="file" style="${ css$1.divFileColumn }">
+		  <div class="file" style="${ css$2.divFileColumn }">
 			<p style="text-align: center;">
 			  <strong>${ fileobj.filename }</strong>
 			</p>
@@ -1611,15 +1572,15 @@ class template$1{
 		let variables = fileobj.content.variables.filter(varobj=>varobj.category==category);
 		
 		return `
-		  <div style="${ css$1.divCategoryWrapper }">
+		  <div style="${ css$2.divCategoryWrapper }">
 			<div class="category ${ category }" 
-			     style="${ css$1.divCategory }"
+			     style="${ css$2.divCategory }"
 				 ownerfile="${ fileobj.filename }"
 			>
 			  ${ variables.map(variableobj=>obj.draggablebutton(variableobj)).join("") }
 			  
 			  ${
-				  template$1.ghostbutton(["ghost-endstop"])
+				  template$2.ghostbutton(["ghost-endstop"])
 			  }
 			</div>
 		  </div>
@@ -1646,21 +1607,21 @@ class template$1{
 		let fractionunique = variableobj.nunique == variableobj.n ? "" : `,  ${variableobj.nunique} / ${variableobj.n}`;
 		
 		let label = `${ variableobj.name } (${variableobj.type + fractionunique})`;
-		let cssstyle = css$1.btnPill + css$1.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
+		let cssstyle = css$2.btnPill + css$2.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
 		let cssclasses = variableobj.supportedCategories.concat("draggable").join(" ");
-		return template$1.button(label, cssstyle, cssclasses, variableobj.name);
+		return template$2.button(label, cssstyle, cssclasses, variableobj.name);
 	} // draggableButton
 
 	legendbutton(category){
 		let obj = this;
-		let cssstyle = css$1.btnPill + css$1.btnLegend + `background-color: ${ obj.color(category) };`;
-		return template$1.button(category, cssstyle, "draggable");
+		let cssstyle = css$2.btnPill + css$2.btnLegend + `background-color: ${ obj.color(category) };`;
+		return template$2.button(category, cssstyle, "draggable");
 	} // draggableButton
 
 	static ghostbutton(classnames){
-		let cssstyle = css$1.btnPill + css$1.btnGhost;
+		let cssstyle = css$2.btnPill + css$2.btnGhost;
 		let cssclass = classnames ? `ghost ${classnames.join(" ")}` : "ghost";
-		return template$1.button("ghost", cssstyle, cssclass);		
+		return template$2.button("ghost", cssstyle, cssclass);		
 	} // ghostButton
 	
 	
@@ -1670,6 +1631,79 @@ class template$1{
 		return template.content.firstChild;
 	} // html2element
 	
+	
+	
+	
+	// Coordinate category container heights.
+	
+	
+	static trimcontainers(containers){
+		// If the last element of any container is a ghost element remove it.
+		containers.forEach(container=>{
+			
+			// Loop over the children backwards.
+			let keep = false;
+			for(let i=container.children.length-1; i>-1; i--){
+				// The first button that is not a ghost triggers all the others to be kept.
+				let testelement = container.children[i];
+				let testclass = testelement.classList;
+				
+				// Don't test if it's the stopend.
+				if( !testclass.contains("ghost-endstop") ){
+					keep = testclass.contains("ghost") ? keep : true;
+					if(!keep){
+						container.removeChild(testelement);
+					} // if
+				} // if
+			} // for
+			
+		}); // forEach
+		
+	} // trimcontainers
+	
+	static coordinateFileDivs(parent){
+		// All filedivs will have the same number of categories. Just make sure that all comparable categories have the same number of elements within them.
+		
+		let containers = parent.querySelectorAll("div.category");
+		
+		// Get all the categories.
+		let categorynames = [];
+		containers.forEach(category=>{
+			categorynames = categorynames.concat( category.classList.value.split(" ") );
+		});
+		categorynames = unique( categorynames );
+		
+		 
+		categorynames.forEach(categoryname=>{
+			// Find all the categories among all the files that need to be coordinated.
+			let categoriesToCoordinate = parent.querySelectorAll(`div.${ categoryname }`);
+			
+			
+			// First trim out all trailing blank spots.
+			template$2.trimcontainers( categoriesToCoordinate );
+			
+			
+			// Find the maximum length
+			let n = 0;
+			categoriesToCoordinate.forEach(category=>{
+				n = category.children.length > n ? category.children.length : n;
+			}); // forEach
+			
+			
+			// Now force them all to the same length by adding ghost elements in front of the ghost-endstop element.
+			categoriesToCoordinate.forEach(category=>{
+				let k = n - category.children.length;
+				let endstop = category.querySelector("button.ghost-endstop");
+				for(let i=0; i<k; i++){
+					category.insertBefore(template$2.html2element(template$2.ghostbutton()), endstop);
+				} // for
+			}); // forEach
+			
+		}); // forEach
+		
+		
+	} // coordinateFileDivs
+
 	
 } // template
 
@@ -1723,7 +1757,7 @@ class variabledrag extends dragnode{
 		obj.stylecontainers();
 		
 		// Make sure the categories of all files maintain consistent heights, and are as short as possible.
-		obj.coordinateFileDivs();
+		template$2.coordinateFileDivs(obj.parent);
 		
 		// Change the color of the variable to match its new category.
 		obj.stylebutton();
@@ -1814,7 +1848,7 @@ class variabledrag extends dragnode{
 		
 		function move(a,container,b){
 			// Append a ghost node to the origin.
-			let originghost = template$1.html2element(template$1.ghostbutton());
+			let originghost = template$2.html2element(template$2.ghostbutton());
 			a.parentElement.insertBefore(originghost, a);
 			
 			// Append to ghost position.
@@ -1868,74 +1902,8 @@ class variabledrag extends dragnode{
 		
 	} // stylecontainers
 	
-	trimcontainers(containers){
-		
-		containers.forEach(container=>{
-			
-			// Loop over the children backwards.
-			let keep = false;
-			for(let i=container.children.length-1; i>-1; i--){
-				// The first button that is not a ghost triggers all the others to be kept.
-				let testelement = container.children[i];
-				let testclass = testelement.classList;
-				
-				// Don't test if it's the stopend.
-				if( !testclass.contains("ghost-endstop") ){
-					keep = testclass.contains("ghost") ? keep : true;
-					if(!keep){
-						container.removeChild(testelement);
-					} // if
-				} // if
-			} // for
-			
-		}); // forEach
-		
-	} // trimcontainers
 	
-	coordinateFileDivs(){
-		// All filedivs will have the same number of categories. Just make sure that all comparable categories have the same number of elements within them.
 		
-		let obj = this;
-		
-		
-		// Get all the categories.
-		let categorynames = [];
-		obj.containers.forEach(category=>{
-			categorynames = categorynames.concat( category.classList.value.split(" ") );
-		});
-		categorynames = unique( categorynames );
-		
-		 
-		categorynames.forEach(categoryname=>{
-			// Find all the categories among all the files that need to be coordinated.
-			let categoriesToCoordinate = obj.parent.querySelectorAll(`div.${ categoryname }`);
-			
-			
-			// First trim out all trailing blank spots.
-			obj.trimcontainers( categoriesToCoordinate );
-			
-			
-			// Find the maximum length
-			let n = 0;
-			categoriesToCoordinate.forEach(category=>{
-				n = category.children.length > n ? category.children.length : n;
-			}); // forEach
-			
-			
-			// Now force them all to the same length by adding ghost elements in front of the ghost-endstop element.
-			categoriesToCoordinate.forEach(category=>{
-				let k = n - category.children.length;
-				let endstop = category.querySelector("button.ghost-endstop");
-				for(let i=0; i<k; i++){
-					category.insertBefore(template$1.html2element(template$1.ghostbutton()), endstop);
-				} // for
-			}); // forEach
-			
-		}); // forEach
-		
-		
-	} // coordinateFileDivs
-	
 } // variabledrag
 
 
@@ -1947,13 +1915,10 @@ class metadatamerger {
 		
 		// It will need to keep track of the files. These will already be metadata files.
 		obj.files = files;
-				
-		// It will need to keep track of the merging information. Maybe it should be a property of this object actually
-		obj.merging = [];
-		
+		obj.merginginfo = [];
 		
 		// Maje the html builder and get a node to attach to the html app.
-		obj.builder = new template$1(obj.files, obj.categories);
+		obj.builder = new template$2(obj.files, obj.categories);
 		obj.node = obj.builder.node;
 		
 		
@@ -1964,17 +1929,21 @@ class metadatamerger {
 		
 		makeObservable(obj, {
 			files: observable,
+			merginginfo: observable,
 			categories: computed,
+			updatefiles: action,
 			submit: action
 		});
 		
 		
-		autorun(()=>{
-			obj.update();
-			obj.show();
-		});
+		autorun(()=>{obj.update();});
 		
 	} // constructor
+	
+	updatefiles(files){
+		let obj = this;
+		obj.files = files;
+	} // updatefiles
 	
 	update(){
 		let obj = this;
@@ -1983,6 +1952,14 @@ class metadatamerger {
 		// Make the builder observe these itself??
 		obj.builder.files = obj.files;
 		obj.builder.categories = obj.categories;
+		
+		// If htere is merging info available, then apply it.
+		/*
+		if(obj.merginginfo){
+			obj.sortByLoadedMergingInfo(obj.merginginfo)
+		} // if
+		*/
+		
 		obj.builder.update();
 		
 		// Apply the draggable functionality. This should really be applied on a file by file basis.
@@ -2000,26 +1977,12 @@ class metadatamerger {
 	
 
 	
-	show(){
-		let obj = this;		
-		obj.node.style.display = "";
-	} // show
-	
-	hide(){
-		let obj = this;
-		obj.node.style.display = "none";
-	} // hide
-	
 	submit(){
 		let obj = this;
 		
 		// Collect the classification from the ui.
 		obj.merginginfo = obj.collectmerginginfo();
 		
-		obj.hide();
-		
-		// Redo the menu for the next appearance.
-		// obj.sortByLoadedMergingInfo(obj.merginginfo);
 		
 	} // submit
 	
@@ -2200,7 +2163,7 @@ Maybe consider making a 'fullscreenmenu template', which would hold the basics?
 
 
 // Declare the necessary css here.
-let css = {
+let css$1 = {
 	
   btn: `
 	  border: none;
@@ -2244,16 +2207,16 @@ let css = {
 
 
 // The html constructor
-function html2element(html){
+function html2element$1(html){
 	let template = document.createElement('template'); 
 	template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
 	return template.content.firstChild;
 } // html2element
 
-var template = {
+var template$1 = {
 	body: `
-		<div style="${ css.fullscreenContainer }">
-		<div style="${ css.card }">
+		<div style="${ css$1.fullscreenContainer }">
+		<div style="${ css$1.card }">
 		  <div>
 			<div>
 			  
@@ -2272,7 +2235,7 @@ var template = {
 		  
 		  
 		  <div>
-			<button class="submit" style="${ css.btn + css.submitBtn }">Understood</button>
+			<button class="submit" style="${ css$1.btn + css$1.submitBtn }">Understood</button>
 		  </div>
 		  
 		</div>
@@ -2282,7 +2245,7 @@ var template = {
 	content: function(errors){
 		
 		return `<div style="padding-left: 20px;">
-			${ errors.map(template.erroritem).join(" ") }
+			${ errors.map(template$1.erroritem).join(" ") }
 		</div>`
 		
 	}, // content
@@ -2306,7 +2269,7 @@ class errorreport {
 		obj.errors = errors;
 				
 		// Apply the submit functionality.
-		obj.node = html2element(template.body);
+		obj.node = html2element$1(template$1.body);
 		obj.node.querySelector("button.submit").addEventListener("click", ()=>obj.hide());
 		
 		
@@ -2334,7 +2297,7 @@ class errorreport {
 		body.lastChild.remove();
 		
 		
-		let content = html2element( template.content(obj.errors) );
+		let content = html2element$1( template$1.content(obj.errors) );
 		body.appendChild( content );
 	} // update
 	
@@ -2346,8 +2309,233 @@ class errorreport {
 		
 } // metadatamerger
 
-// Entry point for the bundling. Build up the session here. Then index.html just runs the bundled javascript file.
+// Turn cfDataManager into a class. Make it reactive if needed. Make sure it uses the devDependency of crossfilter.
 
+
+/* ARCHITECTURE CHANGE
+
+import {sessionManager} from "./sessionManager.js";
+import {color} from "./color.js";
+
+// On cfChange the color options and the user interface need to be changed.
+color.settings.options = dbsliceData.data.categoricalProperties
+sessionManager.resolve.ui.dataAndSessionChange()
+
+*/
+
+
+// WORK IN PROGRESS
+
+/* 1.) DIMENSION MANAGEMENT
+
+How to handle the creation of dimensions? Maybe we should think about the pruning of values? For example: remove all variables that are the same for all of the entries?
+
+*/
+
+
+/* 2.) DATA FLOW 
+
+	How should the data enter? The loading files should be taken care of by the library, the metadata combining by a combiner, and the data manipulations by the data holder.
+	
+	Metadata flow is: loader -> combiner -> datastore -> plots
+	On-demand flow is: loader -> plots
+	
+	
+	How will reactive plots access their data? How will plots in general access their data? For metadata this could be simple, the current selection could just be a computed value, and all other plots would just observe it. How do I pass in an observed value?
+	
+	How would on-demand plots get their data? Would they observe the storage to see if the loaded files match what they need? And maybe then they would draw one item at a time? Maybe experiment with this.
+	
+	
+	Throttling the loading of the on-demand data to ensure interactivity. Instead of having the button let dbslice load the on-demand data needed on the fly (the library helps here enormously!), but only if there is sufficient time to do it.
+
+*/
+
+
+
+
+/* 3.) HANDLING DATETIME DATA */
+
+
+
+/* 4.) INCLUDE THE FILTERING */
+
+
+
+
+let css = {
+	
+  btn: `
+	  border: none;
+	  border-radius: 12px;
+	  text-align: center;
+	  text-decoration: none;
+	  display: inline-block;
+	  font-size: 20px;
+	  margin: 4px 2px;
+	  cursor: pointer;
+  `,
+	
+  fullscreenContainer: `
+	  position: fixed;
+	  top: 0;
+	  bottom: 0;
+	  left: 0;
+	  right: 0;
+	  background: rgba(90, 90, 90, 0.5);
+  `,
+  
+  card: `
+	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+	  transition: 0.3s;
+	  border-radius: 5px;
+	  background-color: gainsboro;
+	  width: 80%;
+	  max-height: 90%;
+	  margin-left: auto;
+	  margin-right: auto;
+	  margin-top: 40px;
+	  padding: 4px;
+  `
+}; // css
+
+
+
+
+
+var template = `
+<div style="${ css.fullscreenContainer }">
+  <div class="menu-card" style="${ css.card }">
+  
+    
+	<div class="menu-header">
+	  <h2 style="display: inline;">Metadata merging:</h2>
+	
+	  <button class="toggle" style="${ css.btn + "float: right;" }">
+		<i class="fa fa-exclamation-triangle"></i>
+	  </button>
+	</div>
+	
+	
+	<div class="menu-body"><div>
+	
+  </div>
+</div>
+`;
+
+
+function html2element(html){
+	let template = document.createElement('template'); 
+	template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
+	return template.content.firstChild;
+} // html2element
+
+
+
+
+// Make the datastore observe the metadata files loaded by the loader? And when it updates it should prompt the user. How do I introduce the user in here? With a button based action!
+
+
+// The metadata can be introduced as a reference bject, and then an autorun can be implemented inside. Ok, so then implement the file loader first.
+
+
+class metadatamanager {
+
+	constructor(files){
+		
+		// The `datastore' object is responsible for tracking all the data changes and selections. It does not hold any information regarding the session, and about any plots made with the data.
+		
+		let obj = this;
+		obj.files = files;
+		
+		// Make the class observable.
+		makeObservable(obj, {
+			metadatafiles: computed
+        });
+		
+		
+		// make the node that can be appended to the DOM.
+		obj.node = html2element(template);
+		let container = obj.node.querySelector("div.menu-body");
+		
+		// Make the modules that need access to the DOM.
+		obj.merger = new metadatamerger([]);
+		container.appendChild(obj.merger.node);
+		
+		console.log(obj.merger);
+		
+		obj.errorreport = new errorreport( obj.errors );
+		
+		
+		
+		// Should it be controlled here??
+		
+		
+		autorun(()=>{obj.update();});
+		autorun(()=>{obj.show();});
+		
+	} // constructor
+	
+	
+	
+	
+	// Well, the metadata manager shouldn't update everytime the files update. But I guess this will update it every time. Will the observable down the line change if this computes the same state? I think so no?
+	get metadatafiles(){
+		let obj = this;
+		
+		// Find all correctly loaded metadata files.
+		let valid = obj.files.filter( fileobj => { return fileobj instanceof metadataFile$1 });
+		
+		return valid
+	} // metadatafiles
+	
+	
+	get errors(){
+		return [];
+	} // errors
+	
+	
+	// When the metadata changes the merging UI should be called, and after the user clicks it the filtermanager should be updated.
+	update(){
+		let obj = this;
+		
+		// This should ONLY run when the merge info changes.
+		
+		
+		
+		// How to control the switch between the merging and the error reports? Always have the button available? But how can I just swap the contents in and out then? Turn hte button on and off? And switch the titles in here?
+		
+		console.log("Use merging info to create metadata and update crossfilter", obj.merger.merginginfo);
+		
+		
+		
+		// Hide the menu.
+		obj.hide();
+		
+	} // update
+	
+	
+	show(){
+		// Show when the metadata files change - new data was loaded. This should work on autorun too no? Most importantly, it should work on a button press.
+		let obj = this;
+		
+		
+		obj.merger.updatefiles( obj.metadatafiles );
+		
+		
+		obj.node.style.display = "";
+	} // show
+	
+	hide(){
+		let obj = this;
+		obj.node.style.display = "none";
+	} // 
+	
+	
+	
+		
+} // metadatamanager
+
+// Entry point for the bundling. Build up the session here. Then index.html just runs the bundled javascript file.
 
 let fullscreenMenusContainer = document.getElementById("fullscreen-menu-container");
 
@@ -2362,13 +2550,13 @@ target.ondrop = (ev)=>{library.ondrop(ev);};
 target.ondragover = (ev)=>{library.ondragover(ev);};
 
 
-
+/*
 
 // HERE IM ASSUMING ALL THE FILES IN THE LIBRARY ARE METADATA FILES!
 // Maybe this should be wrapped in hte metadataManager anyway. It's all in hte pipeline.
 let mergerer = new metadatamerger(library.files);
 fullscreenMenusContainer.appendChild(mergerer.node);
-document.getElementById("merging-show").addEventListener("click", ()=>{mergerer.show();} );
+document.getElementById("merging-show").addEventListener("click", ()=>{mergerer.show()} );
 
 
 // Fake errors with only the relevant attributes:
@@ -2391,3 +2579,12 @@ let errorfiles = [
 ];
 let errorreporter = new errorreport(errorfiles);
 fullscreenMenusContainer.appendChild(errorreporter.node);
+
+*/
+
+
+let M = new metadatamanager(library.files);
+fullscreenMenusContainer.appendChild(M.node);
+
+
+console.log(M);
