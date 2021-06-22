@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('d3-time-format'), require('mobx'), require('crossfilter'), require('d3')) :
-	typeof define === 'function' && define.amd ? define(['d3-time-format', 'mobx', 'crossfilter', 'd3'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(null, global.mobx, null, global.d3$1));
-}(this, (function (d3TimeFormat, mobx, crossfilter, d3$1) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('mobx'), require('d3-time-format'), require('d3')) :
+	typeof define === 'function' && define.amd ? define(['mobx', 'd3-time-format', 'd3'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.mobx, null, global.d3$1));
+}(this, (function (mobx, d3TimeFormat, d3$1) { 'use strict';
 
 	function _interopNamespace(e) {
 		if (e && e.__esModule) return e;
@@ -57,6 +57,173 @@
 		
 	} // arrayIncludesAll
 
+	// Maybe it would be better to create an abstract library, and one that handles the specific needs of the app separately? It would make sense as different apps might have different needs? Or could the metadata management have a computed attribute, and just observe all the files??
+
+	// On-demand plots provide the file manager with the type of file they are requesting. Maybe the session should be treated as a plot? So it prescribes the type of file it would like to have, and then that is passed to the file manager, which just loads and stores it? So filemanager would be a filelibrary?
+
+	class filelibrary {
+		constructor(){
+			let obj = this;
+			
+			obj.files = [];
+			obj.failed = [];
+			
+			// The library does not know the whole extent of the files that are currently required - it only knows what was requested of it. To let it know what is actively needed an array of filenames must be communicated to it.
+			obj.required = [];
+			
+			
+			// I don't want the files to be loaded over and over again. So maybe it's good to have a background storage that keeps all the files, and a frontend storage that computes itself based on hte background and the currently requested status? Maybe still good, because the unnecessary files are disposed of automatically.
+			
+			// Make the class observable.
+			mobx.makeObservable(obj, {
+	            single: mobx.action,
+				updateactive: mobx.action,
+				store: mobx.action,
+				files: mobx.observable,
+				required: mobx.observable,
+	        });
+			
+			
+			// It should keep updating itself to make sure that requested matches the files/failed.
+			mobx.autorun(()=>{obj.update();});
+			
+		} // constructor
+		
+		
+
+		
+		
+		// LOADING
+		single(classref, file, requester){
+			
+			let obj = this;
+			
+			// Filename is not necessarily just a filename. It can also be a `File' object. In that case the URL cannot be created from the name itself. In cases when on-demand data is being loaded, `file' must be the relative path to the file.
+			if(file instanceof File){
+				file = {
+					url: URL.createObjectURL(file),
+					filename: file.name,
+				};
+			} else {
+				file = {
+					url: file,
+					filename: file
+				};
+			} // if
+			
+			
+			// Check if this file already exists loaded in. Only unique filenames are saved, so this should only return a single item in the array.
+			let libraryEntry = obj.retrieveByFilenames( [file.filename] )[0];
+			if(libraryEntry){
+				return libraryEntry
+			} else {	
+				// Initiate loading. After loading if the file has loaded correctly it has some content and can be added to internal storage.
+				let fileobj = new classref(file, requester);
+				fileobj.load();
+				fileobj.promise.then(fileobj_ => obj.store(fileobj_));
+				// obj.store(fileobj)
+				return fileobj.promise;
+			} // if
+					
+		} // single
+		
+		
+		// THE ANONYMOUS FUNCTION MUST BE THE `ACTION'. REWORK
+		store(fileobj){
+			let obj = this;
+			
+			// fileobj.promise.then(function(fileobj){
+				
+				// Other files should be stored if they have any content.
+				if( fileobj.content ){
+					// Successfuly loaded files.
+					obj.required.push(fileobj.filename);
+					obj.files.push(fileobj);
+				} else {
+					// Errors were incurred.
+					obj.failed.push(fileobj);
+				} // if
+				
+			// }) // then
+					
+		} // store
+		
+		retrieveByFilenames(filenames){
+			// If filenames are defined, then return specific files.
+			
+			let obj = this;
+			return obj.files.filter(function(file){
+				return filenames.includes(file.filename)
+			}) // filter
+				
+		} // retrieve
+		
+		retrieveByClass(classref){
+			// If filename is defined, then try to return that file. Otherwise return all.
+			let obj = this;	
+			return obj.files.filter(function(file){
+				return file instanceof classref
+			}) // filter
+				
+		} // retrieveByClass
+		
+		
+		
+		// UPDATING
+		updateactive(filenames){
+			// This is kept separate to allow autorun to perform updates without calling input parameters.
+			let obj = this;
+			obj.required = filenames;
+		} // updateactive
+		
+		update(){
+			// Actually, just allow the plots to issue orders on hteir own. The library update only collects the files that are not required anymore. So this checks to make sure that any files that are no longer needed get thrown out.
+			
+			// But for that it must have access to the filtered tasks, as well as the plots. Maybe there should just be a collection point into which the plots submit their requests, and the library then responds. And when the plots required files change, that would update.
+			let obj = this;
+					
+			let filesForRemoval = obj.files.filter(function(file){
+				return !obj.required.includes(file.filename)
+			}); // filter
+			
+			
+			// Failed loadings should also be removed if they're no longer needed. Maybe still keep everything in a background _files? And produce the failed and files based on that?
+			obj.#remove( filesForRemoval );
+			
+		} // update
+		
+		
+		
+		
+		
+		
+		
+
+		// REMOVAL
+		#removeByFilenames(filenames){
+			// `filenames' is an array of string file names.
+			let obj = this;
+			obj.#remove( obj.retrieveByFilenames(filenames) );
+		} // remove
+		
+		#removeByClass(classref){
+			// `classref' is a class reference such that: new classref(inputs) instanceof classref.
+			let obj = this;
+			obj.#remove( obj.retrieveByClass(classref) );
+		} // remove
+		
+		#remove(files){
+			let obj = this;
+			
+			// For each of these find it's index, and splice it.
+			files.forEach(function(file){
+				let i = obj.files.indexOf(file);
+				obj.files.splice(i,1);
+			});
+		} // removeFiles
+			
+	} // filelibrary
+
 	// Handle the erros within the files, and not within a separate object!!
 
 
@@ -64,12 +231,7 @@
 		constructor(file, requester){
 			
 			// How to load if file is an actual File object.
-			if(file instanceof File){
-				file = {
-					url: URL.createObjectURL(file),
-					filename: file.name,
-				};
-			} // if
+			
 			
 			this.url = file.url;
 			this.filename = file.filename;
@@ -77,7 +239,7 @@
 			this.promise = undefined;
 			
 			// Also log the requestor. If this was passed in then use the passed in value, otherwise the requestor is the user.
-			this.requester = requester ? requester : "User";
+			this.requester = requester ? requester : "unknown";
 			
 			
 			
@@ -895,6 +1057,238 @@
 	  
 	} // metadataFile
 
+	// This one is capable of loading in just about anything, but it's also not getting stored internally.
+	class sessionFile extends dbsliceFile {
+			
+			
+		format(obj){
+			
+			obj.content = dbsliceFile.test.structure(sessionFile, obj.content);
+			return obj
+			
+		} // format
+		
+		static structure = {
+			// This can now more easily handle different ways of specifying contours. Also convenient to implement the data structure conversion here, e.g. from points to triangles.
+			
+			json2sessionFile: function(content){
+				
+				// Has to be an object, whose entries are valid categories. The entries of the categories are considered the variables after teh merge. Each of them must have the same exact properties (file names), the names must include all the already loaded files, and all the file variables must be present in those files. 
+				
+				
+				
+				// Expect two parts to hte file: the merging and session info.
+				
+				// What happens when there is no sessionInfo, or nop merging info? Shouldn't it just throw an error??
+				
+				// Prune away anything that is not in line with the expected structure. This means categories need to be established ahead of time.
+				let mergingInfo = content.mergingInfo;
+				
+				
+				// There are some attributes that the sessionInfo section must have:
+				// title, plotRows.
+				let sessionInfo = content.sessionInfo;
+				if( !arrayIncludesAll( Object.getOwnPropertyNames(sessionInfo), ["title", "plotRows"] ) ){
+					throw( new Error("InvalidFile: Session title or rows not specified."))
+				} // if
+				
+				
+				
+				return {
+					merging: mergingInfo,
+					session: sessionInfo
+				}
+			}, // object
+			
+		} // structure
+			
+		static test = {
+			
+			content: function(content){
+				
+				// The philosophy here is that if it can be applied it is valid.
+				
+				
+				// Try to use it and see if it'll be fine.
+				let fileobjs = dbsliceDataCreation.makeInternalData(fileManager.library.retrieve(metadataFile));
+				
+				fileobjs = dbsliceDataCreation.sortByLoadedMergingInfo(fileobjs, content);
+				
+				// No need to check if all the loaded files were declared for - just use the merge to do what is possible.
+				
+				// Maybe the same applies to variables too? Just use what you can?
+				
+				// Maybe I don't even need to find common file names??
+				
+				
+				// If there's no metadata files loaded then assume they're metadata files.
+				
+				
+				
+				// At least some of the 
+				return true
+				
+			}, // content
+			
+		} // test
+		
+	} // sessionFile
+
+	// `userFile' supports the drag-and-drop functionality. The app has no way of knowing up-fron whether the dropped file is a metadata file or a session configuration file. It can test it to see which type it is, but for that the file needs to be loaded already. The `userFile' provides the initial loading infrastructure and the testing framework to identify the file types, and mutate the loaded files to the appropriate formats.
+
+	class userFile extends dbsliceFile {
+			
+		onload(obj){
+			
+			// Mutate onload.
+			var mutatedobj;
+			switch(obj.content.format){
+				case "metadataFile":
+					// Not easy to mutate, as the format of the content may not be correct.
+					mutatedobj = new metadataFile$1(obj);
+					
+					mutatedobj.content = {
+						data: obj.content.data,
+						variables: obj.content.variables
+					};
+					mutatedobj.promise = mutatedobj.classifyvariables();
+					
+				  break;
+				case "sessionFile":
+					// Return the contents as they are.
+					mutatedobj = new sessionFile(obj);
+					
+					mutatedobj.content = obj.content;
+					mutatedobj.promise = obj.promise;
+					
+				  break;
+			  } // switch
+			
+			return mutatedobj.promise
+			
+		} // onload
+		
+		format(obj){
+			// Here try all different ways to format the data. If the formatting succeeds, then check if the contents are fine.
+			
+			// SHOULD ALSO ACCEPT SESSION FILES.
+			
+			let availableFileClasses = [metadataFile$1, sessionFile];
+			
+			// Here just try to fit the data into all hte supported data formats, and see what works.
+			
+			var content_;
+			availableFileClasses.every(function(fileClass){
+				try {
+					// The structure test will throw an error if the content cannot be handled correctly.
+					content_ = dbsliceFile.test.structure(fileClass, obj.content);
+					
+					// This file class can handle the data.
+					content_.format = fileClass.name;
+				} catch {
+					return true
+				} // if
+			});
+				
+				
+			// Output the object, but add it's format to the name.
+			if( content_.format ){
+				obj.content = content_;
+				return obj
+			} else {
+				throw( new Error( "InvalidFile: Unsupported data structure" ))
+			} // if
+				
+			
+		} // format
+		
+	  
+		static test = {
+			
+			content: function(){
+				// Any content that can be loaded and passes through the format testing is a valid on-demand file.
+				return true
+			}, // content
+			
+		} // test
+		
+		mutateToMetadata(obj){
+			
+			new metadataFile$1(obj);
+			
+			
+			// Refactor the 
+			
+		} // mutateToMetadata
+	  
+	} // userFile
+
+	// Extend that library here so that it can also handle the drag-dropped events.
+
+	class dbslicefilelibrary extends filelibrary {
+		constructor(){
+			super();
+		} // constructor
+		
+		
+		updateactive(filenames){
+			let obj = this;
+			
+			// Always keep the metadata files available.
+			
+			let allMetadataFilenames = obj.retrieveByClass(metadataFile$1).map(fileobj=>fileobj.filename);
+			
+			obj.required = allMetadataFilenames.concat( unique(filenames) );
+			
+		} // updateactive
+		
+		
+		dragdropped(files){
+			// Several files may have been dragged and dropped, and they may be of several types (metadata, session).
+			let obj = this;		
+			
+			files.forEach(file=>{
+				obj.single(userFile, file);
+			}); // forEach
+			
+		} // dragdropped
+		
+		
+		
+		ondrop(ev){
+			let obj = this;
+						
+			// Prevent default behavior (Prevent file from being opened)
+			  ev.preventDefault();
+
+			  var files = [];
+			  if (ev.dataTransfer.items) {
+				// Use DataTransferItemList interface to access the file(s)
+				
+				for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+				  // If dropped items aren't files, reject them
+				  if (ev.dataTransfer.items[i].kind === 'file') {
+					files.push( ev.dataTransfer.items[i].getAsFile() );
+				  } // if
+				} // for
+				
+				
+				
+			  } else {
+				// Use DataTransfer interface to access the file(s)
+				files = ev.dataTransfer.files;
+			  } // if
+			  
+			  obj.dragdropped(files); 
+		} // ondrop
+		
+		ondragover(ev){	
+			// Prevent default behavior (Prevent file from being opened)
+			ev.preventDefault();
+		} // ondragover
+		
+	} // dbslicefilelibrary
+
 	// Formulate this as a class? The it can be called as:
 	// A = new dragdiv() ...
 
@@ -1025,7 +1419,7 @@
 
 
 	// Declare the necessary css here.
-	let css = {
+	let css$1 = {
 	  btn: `
 	  border: none;
 	  border-radius: 12px;
@@ -1113,7 +1507,7 @@
 
 
 	// The html constructor
-	class template{
+	class template$1{
 		
 		constructor(files, categories){
 			let obj = this;
@@ -1126,7 +1520,7 @@
 			obj.categories = unique( categories.concat("unused") );
 
 		
-			obj.node = template.html2element(obj.backbone());
+			obj.node = template$1.html2element(obj.backbone());
 			obj.update();
 		} // constructor
 		
@@ -1138,12 +1532,12 @@
 			// Update the legend on top.
 			let legend = obj.node.querySelector("div.legend");
 			legend.lastChild.remove();
-			legend.appendChild( template.html2element( obj.legend() ) );
+			legend.appendChild( template$1.html2element( obj.legend() ) );
 			
 			// Update the interactive body
 			let body = obj.node.querySelector("div.body");
 			body.lastChild.remove();
-			body.appendChild( template.html2element( obj.interactivecontent() ) );
+			body.appendChild( template$1.html2element( obj.interactivecontent() ) );
 			
 		} // update
 		
@@ -1163,14 +1557,14 @@
 
 		backbone(){
 			return `
-		<div style="${ css.fullscreenContainer + "display: none;"}">
-		<div style="${ css.card }">
+		<div style="${ css$1.fullscreenContainer + "display: none;"}">
+		<div style="${ css$1.card }">
 		  <div>
 			<div>
 			  
 			  <div>
-				<h2 style="display: inline;">Metadata merging:</h4>
-				<button style="${ css.btn + "float: right;" }">
+				<h2 style="display: inline;">Metadata merging:</h2>
+				<button style="${ css$1.btn + "float: right;" }">
 				  <i class="fa fa-exclamation-triangle"></i>
 				</button>
 			  </div>
@@ -1184,14 +1578,14 @@
 		  </div>
 		  
 		  
-		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px; width: ">
+		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
 			<div></div>
 		  </div>
 		  
 		  
 		  
 		  <div>
-			<button class="submit" style="${ css.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
+			<button class="submit" style="${ css$1.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
 		  </div>
 		  
 		</div>
@@ -1201,10 +1595,11 @@
 		
 		
 		legend(){
+			// Still add a ghost button if the re is no categories to maintain hte look.
 			let obj = this;
 			return `
 		  <div>
-			${ obj.categories.map(d=>obj.legendbutton(d)).join("") }
+			${ obj.categories.length > 0 ? obj.categories.map(d=>obj.legendbutton(d)).join("") : template$1.ghostbutton() }
 		  </div>
 		`
 		} // legend
@@ -1221,7 +1616,7 @@
 			let obj = this;
 			
 			return `
-		  <div class="file" style="${ css.divFileColumn }">
+		  <div class="file" style="${ css$1.divFileColumn }">
 			<p style="text-align: center;">
 			  <strong>${ fileobj.filename }</strong>
 			</p>
@@ -1240,15 +1635,15 @@
 			let variables = fileobj.content.variables.filter(varobj=>varobj.category==category);
 			
 			return `
-		  <div style="${ css.divCategoryWrapper }">
+		  <div style="${ css$1.divCategoryWrapper }">
 			<div class="category ${ category }" 
-			     style="${ css.divCategory }"
+			     style="${ css$1.divCategory }"
 				 ownerfile="${ fileobj.filename }"
 			>
 			  ${ variables.map(variableobj=>obj.draggablebutton(variableobj)).join("") }
 			  
 			  ${
-				  template.ghostbutton(["ghost-endstop"])
+				  template$1.ghostbutton(["ghost-endstop"])
 			  }
 			</div>
 		  </div>
@@ -1275,21 +1670,21 @@
 			let fractionunique = variableobj.nunique == variableobj.n ? "" : `,  ${variableobj.nunique} / ${variableobj.n}`;
 			
 			let label = `${ variableobj.name } (${variableobj.type + fractionunique})`;
-			let cssstyle = css.btnPill + css.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
+			let cssstyle = css$1.btnPill + css$1.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
 			let cssclasses = variableobj.supportedCategories.concat("draggable").join(" ");
-			return template.button(label, cssstyle, cssclasses, variableobj.name);
+			return template$1.button(label, cssstyle, cssclasses, variableobj.name);
 		} // draggableButton
 
 		legendbutton(category){
 			let obj = this;
-			let cssstyle = css.btnPill + css.btnLegend + `background-color: ${ obj.color(category) };`;
-			return template.button(category, cssstyle, "draggable");
+			let cssstyle = css$1.btnPill + css$1.btnLegend + `background-color: ${ obj.color(category) };`;
+			return template$1.button(category, cssstyle, "draggable");
 		} // draggableButton
 
 		static ghostbutton(classnames){
-			let cssstyle = css.btnPill + css.btnGhost;
+			let cssstyle = css$1.btnPill + css$1.btnGhost;
 			let cssclass = classnames ? `ghost ${classnames.join(" ")}` : "ghost";
-			return template.button("ghost", cssstyle, cssclass);		
+			return template$1.button("ghost", cssstyle, cssclass);		
 		} // ghostButton
 		
 		
@@ -1301,9 +1696,6 @@
 		
 		
 	} // template
-
-
-
 
 
 
@@ -1446,7 +1838,7 @@
 			
 			function move(a,container,b){
 				// Append a ghost node to the origin.
-				let originghost = template.html2element(template.ghostbutton());
+				let originghost = template$1.html2element(template$1.ghostbutton());
 				a.parentElement.insertBefore(originghost, a);
 				
 				// Append to ghost position.
@@ -1559,7 +1951,7 @@
 					let k = n - category.children.length;
 					let endstop = category.querySelector("button.ghost-endstop");
 					for(let i=0; i<k; i++){
-						category.insertBefore(template.html2element(template.ghostbutton()), endstop);
+						category.insertBefore(template$1.html2element(template$1.ghostbutton()), endstop);
 					} // for
 				}); // forEach
 				
@@ -1569,11 +1961,6 @@
 		} // coordinateFileDivs
 		
 	} // variabledrag
-
-
-
-
-
 
 
 
@@ -1590,7 +1977,7 @@
 			
 			
 			// Maje the html builder and get a node to attach to the html app.
-			obj.builder = new template(obj.files, obj.categories);
+			obj.builder = new template$1(obj.files, obj.categories);
 			obj.node = obj.builder.node;
 			
 			
@@ -1614,9 +2001,6 @@
 		} // constructor
 		
 		update(){
-			// This should really run automatically....
-			console.log("Update mergerer");
-			
 			let obj = this;
 			
 			// Somehow uncouple the template more. All hte interactive content needs to be updated - including the legend.
@@ -1827,435 +2211,209 @@
 			
 	} // metadatamerger
 
-	// Maybe it would be better to create an abstract library, and one that handles the specific needs of the app separately? It would make sense as different apps might have different needs? Or could the metadata management have a computed attribute, and just observe all the files??
+	// import {makeObservable, observable, autorun, action, computed} from "mobx";
 
-	// On-demand plots provide the file manager with the type of file they are requesting. Maybe the session should be treated as a plot? So it prescribes the type of file it would like to have, and then that is passed to the file manager, which just loads and stores it? So filemanager would be a filelibrary?
 
-	class filelibrary {
-		constructor(){
+
+	/*
+	The error report requires very little interaction with the data - it only needs to read the reports.
+
+	Maybe consider making a 'fullscreenmenu template', which would hold the basics?
+
+	*/
+
+
+	// Declare the necessary css here.
+	let css = {
+		
+	  btn: `
+	  border: none;
+	  border-radius: 12px;
+	  text-align: center;
+	  text-decoration: none;
+	  display: inline-block;
+	  font-size: 20px;
+	  margin: 4px 2px;
+	  cursor: pointer;
+  `,
+	  
+	  submitBtn: `
+	background-color: mediumSeaGreen; 
+	color: white;
+  `,
+
+	  fullscreenContainer: `
+	  position: fixed;
+	  top: 0;
+	  bottom: 0;
+	  left: 0;
+	  right: 0;
+	  background: rgba(90, 90, 90, 0.5);
+  `,
+	  
+	  card: `
+	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+	  transition: 0.3s;
+	  border-radius: 5px;
+	  background-color: gainsboro;
+	  width: 80%;
+	  max-height: 90%;
+	  margin-left: auto;
+	  margin-right: auto;
+	  margin-top: 40px;
+	  padding: 4px;
+  `
+	}; // css
+
+
+
+	// The html constructor
+	function html2element(html){
+		let template = document.createElement('template'); 
+		template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
+		return template.content.firstChild;
+	} // html2element
+
+	var template = {
+		body: `
+		<div style="${ css.fullscreenContainer }">
+		<div style="${ css.card }">
+		  <div>
+			<div>
+			  
+			  <div>
+				<h2 style="display: inline;">Loading errors:</h2>
+			  </div>
+			  
+			</div>
+		  </div>
+		  
+		  
+		  <div class="body" style="overflow-y: scroll; overflow-x: auto; height: 400px;">
+			<div></div>
+		  </div>
+		  
+		  
+		  
+		  <div>
+			<button class="submit" style="${ css.btn + css.submitBtn }">Understood</button>
+		  </div>
+		  
+		</div>
+		</div>
+	`,
+		
+		content: function(errors){
+			
+			return `<div style="padding-left: 20px;">
+			${ errors.map(template.erroritem).join(" ") }
+		</div>`
+			
+		}, // content
+		
+		erroritem: function(item){
+			return `
+		  <p><b>${ item.filename }</b> loaded by <b>${ item.requester }</b>: LoaderError: Unsupported Extension</p>
+		`
+		}
+		
+	}; // template
+
+
+
+	// The coordination of merging.
+	class errorreport {
+		constructor(errors){
 			let obj = this;
 			
-			obj.files = [];
-			obj.failed = [];
-			
-			// The library does not know the whole extent of the files that are currently required - it only knows what was requested of it. To let it know what is actively needed an array of filenames must be communicated to it.
-			obj.required = [];
-			
-			
-			// I don't want the files to be loaded over and over again. So maybe it's good to have a background storage that keeps all the files, and a frontend storage that computes itself based on hte background and the currently requested status? Maybe still good, because the unnecessary files are disposed of automatically.
-			
-			// Make the class observable.
-			mobx.makeObservable(obj, {
-	            single: mobx.action,
-				updateactive: mobx.action,
-				store: mobx.action,
-				files: mobx.observable,
-				required: mobx.observable,
-	        });
+			// It will need to keep track of the files. These will already be metadata files.
+			obj.errors = errors;
+					
+			// Apply the submit functionality.
+			obj.node = html2element(template.body);
+			obj.node.querySelector("button.submit").addEventListener("click", ()=>obj.hide());
 			
 			
-			// It should keep updating itself to make sure that requested matches the files/failed.
-			mobx.autorun(()=>{obj.update();});
+			
+			obj.update();
+			/*
+			// Erros should be observable, and the menu should update itself automatically.
+			makeObservable({
+				errors: observable
+			})
+			
+			autorun(()=>{
+				obj.update();
+			})
+			*/
 			
 		} // constructor
 		
-		
-
-		
-		
-		// LOADING
-		single(classref, filename){
-			
-			let obj = this;
-			
-			
-			// Check if this file already exists loaded in. Only unique filenames are saved, so this should only return a single item in the array.
-			let libraryEntry = obj.retrieveByFilenames( [filename] )[0];
-			if(libraryEntry){
-				return libraryEntry
-			} else {	
-				// Initiate loading. After loading if the file has loaded correctly it has some content and can be added to internal storage.
-				let fileobj = new classref(filename);
-				fileobj.load();
-				fileobj.promise.then(fileobj_ => obj.store(fileobj_));
-				// obj.store(fileobj)
-				return fileobj.promise;
-			} // if
-					
-		} // single
-		
-		
-		// THE ANONYMOUS FUNCTION MUST BE THE `ACTION'. REWORK
-		store(fileobj){
-			let obj = this;
-			
-			// fileobj.promise.then(function(fileobj){
-				
-				// Other files should be stored if they have any content.
-				if( fileobj.content ){
-					// Successfuly loaded files.
-					obj.required.push(fileobj.filename);
-					obj.files.push(fileobj);
-				} else {
-					// Errors were incurred.
-					obj.failed.push(fileobj);
-				} // if
-				
-			// }) // then
-					
-		} // store
-		
-		retrieveByFilenames(filenames){
-			// If filenames are defined, then return specific files.
-			
-			let obj = this;
-			return obj.files.filter(function(file){
-				return filenames.includes(file.filename)
-			}) // filter
-				
-		} // retrieve
-		
-		retrieveByClass(classref){
-			// If filename is defined, then try to return that file. Otherwise return all.
-			let obj = this;	
-			return obj.files.filter(function(file){
-				return file instanceof classref
-			}) // filter
-				
-		} // retrieveByClass
-		
-		
-		
-		// UPDATING
-		updateactive(filenames){
-			// This is kept separate to allow autorun to perform updates without calling input parameters.
-			let obj = this;
-			obj.required = filenames;
-		} // updateactive
 		
 		update(){
-			// Actually, just allow the plots to issue orders on hteir own. The library update only collects the files that are not required anymore. So this checks to make sure that any files that are no longer needed get thrown out.
-			
-			// But for that it must have access to the filtered tasks, as well as the plots. Maybe there should just be a collection point into which the plots submit their requests, and the library then responds. And when the plots required files change, that would update.
 			let obj = this;
-					
-			let filesForRemoval = obj.files.filter(function(file){
-				return !obj.required.includes(file.filename)
-			}); // filter
+			
+			// Remove the current content, and add in the new content.
+			let body = obj.node.querySelector("div.body");
+			body.lastChild.remove();
 			
 			
-			// Failed loadings should also be removed if they're no longer needed. Maybe still keep everything in a background _files? And produce the failed and files based on that?
-			obj.#remove( filesForRemoval );
-			
+			let content = html2element( template.content(obj.errors) );
+			body.appendChild( content );
 		} // update
 		
-		
-		
-		
-		
-		
-		
-
-		// REMOVAL
-		#removeByFilenames(filenames){
-			// `filenames' is an array of string file names.
+		hide(){
 			let obj = this;
-			obj.#remove( obj.retrieveByFilenames(filenames) );
-		} // remove
+			obj.node.style.display = "none";
+		} // hide
 		
-		#removeByClass(classref){
-			// `classref' is a class reference such that: new classref(inputs) instanceof classref.
-			let obj = this;
-			obj.#remove( obj.retrieveByClass(classref) );
-		} // remove
-		
-		#remove(files){
-			let obj = this;
 			
-			// For each of these find it's index, and splice it.
-			files.forEach(function(file){
-				let i = obj.files.indexOf(file);
-				obj.files.splice(i,1);
-			});
-		} // removeFiles
-			
-	} // filelibrary
-
-	// This one is capable of loading in just about anything, but it's also not getting stored internally.
-	class sessionFile extends dbsliceFile {
-			
-			
-		format(obj){
-			
-			obj.content = dbsliceFile.test.structure(sessionFile, obj.content);
-			return obj
-			
-		} // format
-		
-		static structure = {
-			// This can now more easily handle different ways of specifying contours. Also convenient to implement the data structure conversion here, e.g. from points to triangles.
-			
-			json2sessionFile: function(content){
-				
-				// Has to be an object, whose entries are valid categories. The entries of the categories are considered the variables after teh merge. Each of them must have the same exact properties (file names), the names must include all the already loaded files, and all the file variables must be present in those files. 
-				
-				
-				
-				// Expect two parts to hte file: the merging and session info.
-				
-				// What happens when there is no sessionInfo, or nop merging info? Shouldn't it just throw an error??
-				
-				// Prune away anything that is not in line with the expected structure. This means categories need to be established ahead of time.
-				let mergingInfo = content.mergingInfo;
-				
-				
-				// There are some attributes that the sessionInfo section must have:
-				// title, plotRows.
-				let sessionInfo = content.sessionInfo;
-				if( !arrayIncludesAll( Object.getOwnPropertyNames(sessionInfo), ["title", "plotRows"] ) ){
-					throw( new Error("InvalidFile: Session title or rows not specified."))
-				} // if
-				
-				
-				
-				return {
-					merging: mergingInfo,
-					session: sessionInfo
-				}
-			}, // object
-			
-		} // structure
-			
-		static test = {
-			
-			content: function(content){
-				
-				// The philosophy here is that if it can be applied it is valid.
-				
-				
-				// Try to use it and see if it'll be fine.
-				let fileobjs = dbsliceDataCreation.makeInternalData(fileManager.library.retrieve(metadataFile));
-				
-				fileobjs = dbsliceDataCreation.sortByLoadedMergingInfo(fileobjs, content);
-				
-				// No need to check if all the loaded files were declared for - just use the merge to do what is possible.
-				
-				// Maybe the same applies to variables too? Just use what you can?
-				
-				// Maybe I don't even need to find common file names??
-				
-				
-				// If there's no metadata files loaded then assume they're metadata files.
-				
-				
-				
-				// At least some of the 
-				return true
-				
-			}, // content
-			
-		} // test
-		
-	} // sessionFile
-
-	// `userFile' supports the drag-and-drop functionality. The app has no way of knowing up-fron whether the dropped file is a metadata file or a session configuration file. It can test it to see which type it is, but for that the file needs to be loaded already. The `userFile' provides the initial loading infrastructure and the testing framework to identify the file types, and mutate the loaded files to the appropriate formats.
-
-	class userFile extends dbsliceFile {
-			
-		onload(obj){
-			
-			// Mutate onload.
-			var mutatedobj;
-			switch(obj.content.format){
-				case "metadataFile":
-					// Not easy to mutate, as the format of the content may not be correct.
-					mutatedobj = new metadataFile$1(obj);
-					
-					mutatedobj.content = {
-						data: obj.content.data,
-						variables: obj.content.variables
-					};
-					mutatedobj.promise = mutatedobj.classifyvariables();
-					
-				  break;
-				case "sessionFile":
-					// Return the contents as they are.
-					mutatedobj = new sessionFile(obj);
-					
-					mutatedobj.content = obj.content;
-					mutatedobj.promise = obj.promise;
-					
-				  break;
-			  } // switch
-			
-			return mutatedobj.promise
-			
-		} // onload
-		
-		format(obj){
-			// Here try all different ways to format the data. If the formatting succeeds, then check if the contents are fine.
-			
-			// SHOULD ALSO ACCEPT SESSION FILES.
-			
-			let availableFileClasses = [metadataFile$1, sessionFile];
-			
-			// Here just try to fit the data into all hte supported data formats, and see what works.
-			
-			var content_;
-			availableFileClasses.every(function(fileClass){
-				try {
-					// The structure test will throw an error if the content cannot be handled correctly.
-					content_ = dbsliceFile.test.structure(fileClass, obj.content);
-					
-					// This file class can handle the data.
-					content_.format = fileClass.name;
-				} catch {
-					return true
-				} // if
-			});
-				
-				
-			// Output the object, but add it's format to the name.
-			if( content_.format ){
-				obj.content = content_;
-				return obj
-			} else {
-				throw( new Error( "InvalidFile: Unsupported data structure" ))
-			} // if
-				
-			
-		} // format
-		
-	  
-		static test = {
-			
-			content: function(){
-				// Any content that can be loaded and passes through the format testing is a valid on-demand file.
-				return true
-			}, // content
-			
-		} // test
-		
-		mutateToMetadata(obj){
-			
-			new metadataFile$1(obj);
-			
-			
-			// Refactor the 
-			
-		} // mutateToMetadata
-	  
-	} // userFile
-
-	// Extend that library here so that it can also handle the drag-dropped events.
-
-	class dbslicefilelibrary extends filelibrary {
-		constructor(){
-			super();
-		} // constructor
-		
-		
-		updateactive(filenames){
-			let obj = this;
-			
-			// Always keep the metadata files available.
-			
-			let allMetadataFilenames = obj.retrieveByClass(metadataFile$1).map(fileobj=>fileobj.filename);
-			
-			obj.required = allMetadataFilenames.concat( unique(filenames) );
-			
-		} // updateactive
-		
-		
-		dragdropped(files){
-			// Several files may have been dragged and dropped, and they may be of several types (metadata, session).
-			let obj = this;		
-			
-			files.forEach(file=>{
-				//obj.alwaysrequired.push(file.filename);
-				obj.single(userFile, file);
-			}); // forEach
-			
-		} // dragdropped
-		
-		
-		
-		ondrop(ev){
-			let obj = this;
-						
-			// Prevent default behavior (Prevent file from being opened)
-			  ev.preventDefault();
-
-			  var files = [];
-			  if (ev.dataTransfer.items) {
-				// Use DataTransferItemList interface to access the file(s)
-				
-				for (var i = 0; i < ev.dataTransfer.items.length; i++) {
-				  // If dropped items aren't files, reject them
-				  if (ev.dataTransfer.items[i].kind === 'file') {
-					files.push( ev.dataTransfer.items[i].getAsFile() );
-				  } // if
-				} // for
-				
-				
-				
-			  } else {
-				// Use DataTransfer interface to access the file(s)
-				files = ev.dataTransfer.files;
-			  } // if
-			  
-			  obj.dragdropped(files); 
-		} // ondrop
-		
-		ondragover(ev){	
-			// Prevent default behavior (Prevent file from being opened)
-			ev.preventDefault();
-		} // ondragover
-		
-	} // dbslicefilelibrary
-	 // dragOverHandler
+	} // metadatamerger
 
 	// Entry point for the bundling. Build up the session here. Then index.html just runs the bundled javascript file.
 
 
-
+	let fullscreenMenusContainer = document.getElementById("fullscreen-menu-container");
 
 
 	// For the file library now set some required extent, and then ask for some of the files.
 	let library = new dbslicefilelibrary();
-
-
-
-	/* Request a single metadata file. The input for files should be an object:
-		file = {
-			url: url,
-			filename: filename
-		}
-	 */
-	/*
-	library.single(metadataFile, {url: "./data/m_c3s_0.csv", filename: "./data/m_c3s_0.csv"});
-	library.single(metadataFile, {url: "./data/m_c3s_1.csv", filename: "./data/m_c3s_1.csv"});
-	*/
 	console.log(library);
-
-
-	// HERE IM ASSUMING ALL THE FILES IN THE LIBRARY ARE METADATA FILES!
-	// Maybe this should be wrapped in hte metadataManager anyway. It's all in hte pipeline.
-	let mergerer = new metadatamerger(library.files);
-	document.getElementById("fullscreen-menu-container").appendChild(mergerer.node);
-
-
-	document.getElementById("merging-show").addEventListener("click", ()=>{mergerer.show();} );
-
-
-
-
-
-	// Should this be it's own store? And the library can respond to it? That means it needs to observe something, making it less flexible? But maybe thats the way it should handle the metadata anyway??
 
 	// Dragging and dropping
 	let target = document.getElementById("dragAndDrop");
 	target.ondrop = (ev)=>{library.ondrop(ev);};
 	target.ondragover = (ev)=>{library.ondragover(ev);};
+
+
+
+
+	// HERE IM ASSUMING ALL THE FILES IN THE LIBRARY ARE METADATA FILES!
+	// Maybe this should be wrapped in hte metadataManager anyway. It's all in hte pipeline.
+	let mergerer = new metadatamerger(library.files);
+	fullscreenMenusContainer.appendChild(mergerer.node);
+	document.getElementById("merging-show").addEventListener("click", ()=>{mergerer.show();} );
+
+
+	// Fake errors with only the relevant attributes:
+	let errorfiles = [
+	  {
+	    filename: "_fileManager.js",
+	    requester: "User",
+	    errors: [
+	        {message: "LoaderError: Unsupported Extension"}
+	    ]
+	  },
+	  
+	  {
+	    filename: "_fake file.js",
+	    requester: "drag & drop",
+	    errors: [
+	        {message: "LoaderError: Unsupported content format"}
+	    ]
+	  }
+	];
+	let errorreporter = new errorreport(errorfiles);
+	fullscreenMenusContainer.appendChild(errorreporter.node);
 
 })));

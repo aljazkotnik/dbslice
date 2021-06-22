@@ -8,12 +8,7 @@ export default class dbsliceFile {
 	constructor(file, requester){
 		
 		// How to load if file is an actual File object.
-		if(file instanceof File){
-			file = {
-				url: URL.createObjectURL(file),
-				filename: file.name,
-			}
-		} // if
+		
 		
 		this.url = file.url
 		this.filename = file.filename
@@ -21,7 +16,7 @@ export default class dbsliceFile {
 		this.promise = undefined
 		
 		// Also log the requestor. If this was passed in then use the passed in value, otherwise the requestor is the user.
-		this.requester = requester ? requester : "User"
+		this.requester = requester ? requester : "unknown";
 		
 		
 		

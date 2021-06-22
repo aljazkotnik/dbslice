@@ -31,7 +31,6 @@ export default class dbslicefilelibrary extends filelibrary {
 		let obj = this;		
 		
 		files.forEach(file=>{
-			//obj.alwaysrequired.push(file.filename);
 			obj.single(userFile, file)
 		}) // forEach
 		
@@ -72,41 +71,3 @@ export default class dbslicefilelibrary extends filelibrary {
 	} // ondragover
 	
 } // dbslicefilelibrary
-
-
-
-		
-function dropHandler(ev) {
-	  
-
-  // Prevent default behavior (Prevent file from being opened)
-  ev.preventDefault();
-
-  var files = []
-  if (ev.dataTransfer.items) {
-	// Use DataTransferItemList interface to access the file(s)
-	
-	for (var i = 0; i < ev.dataTransfer.items.length; i++) {
-	  // If dropped items aren't files, reject them
-	  if (ev.dataTransfer.items[i].kind === 'file') {
-		files.push( ev.dataTransfer.items[i].getAsFile() );
-	  } // if
-	} // for
-	
-	
-	
-  } else {
-	// Use DataTransfer interface to access the file(s)
-	files = ev.dataTransfer.files
-  } // if
-  
-  // NEEDS TO BE CHANGED!!
-  console.log("dragdropping!!")
-  library.dragdropped(files); 
-  
-} // dropHandler
-
-function dragOverHandler(ev) {
-  // Prevent default behavior (Prevent file from being opened)
-  ev.preventDefault();
-} // dragOverHandler

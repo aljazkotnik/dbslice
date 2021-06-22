@@ -168,7 +168,7 @@ class template{
 			<div>
 			  
 			  <div>
-				<h2 style="display: inline;">Metadata merging:</h4>
+				<h2 style="display: inline;">Metadata merging:</h2>
 				<button style="${ css.btn + "float: right;" }">
 				  <i class="fa fa-exclamation-triangle"></i>
 				</button>
@@ -183,7 +183,7 @@ class template{
 		  </div>
 		  
 		  
-		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px; width: ">
+		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
 			<div></div>
 		  </div>
 		  
@@ -200,10 +200,11 @@ class template{
 	
 	
 	legend(){
+		// Still add a ghost button if the re is no categories to maintain hte look.
 		let obj = this;
 		return `
 		  <div>
-			${ obj.categories.map(d=>obj.legendbutton(d)).join("") }
+			${ obj.categories.length > 0 ? obj.categories.map(d=>obj.legendbutton(d)).join("") : template.ghostbutton() }
 		  </div>
 		`
 	} // legend
@@ -300,9 +301,6 @@ class template{
 	
 	
 } // template
-
-
-
 
 
 
@@ -576,11 +574,6 @@ class variabledrag extends dragnode{
 
 
 
-
-
-
-
-
 // The coordination of merging.
 export default class metadatamerger {
 	constructor(files){
@@ -618,9 +611,6 @@ export default class metadatamerger {
 	} // constructor
 	
 	update(){
-		// This should really run automatically....
-		console.log("Update mergerer")
-		
 		let obj = this;
 		
 		// Somehow uncouple the template more. All hte interactive content needs to be updated - including the legend.
@@ -830,62 +820,3 @@ export default class metadatamerger {
 	
 		
 } // metadatamerger
-
-
-
-
-
-
-// Testing data.
-
-
-// Any loaded merging data will have to be checked to make sure that the aliases are unique, they point to unique variables, not two variables from the same file point to the same alias.
-
-
-
-var mergingtestinfo = [
-{"filename": "./data/m_c3s_0.csv", "name": "taskId", "category": "categorical", "alias": "taskId"},
-{"filename": "./data/m_c3s_1.csv", "name": "taskId", "category": "categorical", "alias": "taskId"},
-{"filename": "./data/m_c3s_0.csv", "name": "label", "category": "categorical", "alias": "label"},
-{"filename": "./data/m_c3s_1.csv", "name": "label", "category": "categorical", "alias": "label"},
-{"filename": "./data/m_c3s_0.csv", "name": "categorical_1", "category": "categorical", "alias": "categorical_1"},
-{"filename": "./data/m_c3s_1.csv", "name": "c_Design", "category": "categorical", "alias": "categorical_1"},
-{"filename": "./data/m_c3s_0.csv", "name": "categorical_2", "category": "categorical", "alias": "categorical_2"},
-{"filename": "./data/m_c3s_1.csv", "name": "c_Speed", "category": "categorical", "alias": "categorical_2"},
-{"filename": "./data/m_c3s_0.csv", "name": "categorical_3", "category": "categorical", "alias": "categorical_3"},
-{"filename": "./data/m_c3s_1.csv", "name": "c_Factor Name", "category": "categorical", "alias": "categorical_3"},
-{"filename": "./data/m_c3s_0.csv", "name": "categorical_4", "category": "categorical", "alias": "categorical_4"},
-{"filename": "./data/m_c3s_1.csv", "name": "c_Factor Value", "category": "categorical", "alias": "categorical_4"},
-{"filename": "./data/m_c3s_0.csv", "name": "ordinal_1", "category": "ordinal", "alias": "ordinal_1"},
-{"filename": "./data/m_c3s_1.csv", "name": "o_Efficiency", "category": "ordinal", "alias": "ordinal_1"},
-{"filename": "./data/m_c3s_0.csv", "name": "ordinal_2", "category": "ordinal", "alias": "ordinal_2"},
-{"filename": "./data/m_c3s_1.csv", "name": "o_Mass flow", "category": "ordinal", "alias": "ordinal_2"},
-{"filename": "./data/m_c3s_0.csv", "name": "ordinal_3", "category": "ordinal", "alias": "ordinal_3"},
-{"filename": "./data/m_c3s_1.csv", "name": "o_Pressure ratio", "category": "ordinal", "alias": "ordinal_3"},
-{"filename": "./data/m_c3s_0.csv", "name": "ordinal_4", "category": "ordinal", "alias": "ordinal_4"},
-{"filename": "./data/m_c3s_1.csv", "name": "o_fakePressure", "category": "ordinal", "alias": "ordinal_4"},
-{"filename": "./data/m_c3s_0.csv", "name": "s_rotor1", "category": "line2dFile", "alias": "s_rotor1"},
-{"filename": "./data/m_c3s_1.csv", "name": "s_rotor1", "category": "line2dFile", "alias": "s_rotor1"},
-{"filename": "./data/m_c3s_0.csv", "name": "s_rotor2", "category": "line2dFile", "alias": "s_rotor2"},
-{"filename": "./data/m_c3s_1.csv", "name": "s_rotor2", "category": "line2dFile", "alias": "s_rotor2"},
-{"filename": "./data/m_c3s_0.csv", "name": "s_rotor3", "category": "line2dFile", "alias": "s_rotor3"},
-{"filename": "./data/m_c3s_1.csv", "name": "s_rotor3", "category": "line2dFile", "alias": "s_rotor3"},
-{"filename": "./data/m_c3s_0.csv", "name": "s_stator1", "category": "line2dFile", "alias": "s_stator1"},
-{"filename": "./data/m_c3s_1.csv", "name": "s_stator1", "category": "line2dFile", "alias": "s_stator1"},
-{"filename": "./data/m_c3s_0.csv", "name": "s_stator2", "category": "line2dFile", "alias": "s_stator2"},
-{"filename": "./data/m_c3s_1.csv", "name": "s_stator2", "category": "line2dFile", "alias": "s_stator2"},
-{"filename": "./data/m_c3s_0.csv", "name": "s_stator3", "category": "line2dFile", "alias": "s_stator3"},
-{"filename": "./data/m_c3s_1.csv", "name": "s_stator3", "category": "line2dFile", "alias": "s_stator3"},
-{"filename": "./data/m_c3s_0.csv", "name": "c2d_rotor1_exit", "category": "contour2dFile", "alias": "c2d_rotor1_exit"},
-{"filename": "./data/m_c3s_1.csv", "name": "c2d_rotor1_exit", "category": "contour2dFile", "alias": "c2d_rotor1_exit"},
-{"filename": "./data/m_c3s_0.csv", "name": "c2d_rotor2_exit", "category": "contour2dFile", "alias": "c2d_rotor2_exit"},
-{"filename": "./data/m_c3s_1.csv", "name": "c2d_rotor2_exit", "category": "contour2dFile", "alias": "c2d_rotor2_exit"},
-{"filename": "./data/m_c3s_0.csv", "name": "c2d_rotor3_exit", "category": "contour2dFile", "alias": "c2d_rotor3_exit"},
-{"filename": "./data/m_c3s_1.csv", "name": "c2d_rotor3_exit", "category": "contour2dFile", "alias": "c2d_rotor3_exit"},
-{"filename": "./data/m_c3s_0.csv", "name": "c2d_stator1_exit", "category": "contour2dFile", "alias": "c2d_stator1_exit"},
-{"filename": "./data/m_c3s_1.csv", "name": "c2d_stator1_exit", "category": "contour2dFile", "alias": "c2d_stator1_exit"},
-{"filename": "./data/m_c3s_0.csv", "name": "c2d_stator2_exit", "category": "contour2dFile", "alias": "c2d_stator2_exit"},
-{"filename": "./data/m_c3s_1.csv", "name": "c2d_stator2_exit", "category": "contour2dFile", "alias": "c2d_stator2_exit"},
-{"filename": "./data/m_c3s_0.csv", "name": "c2d_stator3_exit", "category": "contour2dFile", "alias": "c2d_stator3_exit"},
-{"filename": "./data/m_c3s_1.csv", "name": "c2d_stator3_exit", "category": "contour2dFile", "alias": "c2d_stator3_exit"}
-]

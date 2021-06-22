@@ -41,18 +41,31 @@ export default class filelibrary {
 	
 	
 	// LOADING
-	single(classref, filename){
+	single(classref, file, requester){
 		
 		let obj = this;
 		
+		// Filename is not necessarily just a filename. It can also be a `File' object. In that case the URL cannot be created from the name itself. In cases when on-demand data is being loaded, `file' must be the relative path to the file.
+		if(file instanceof File){
+			file = {
+				url: URL.createObjectURL(file),
+				filename: file.name,
+			}
+		} else {
+			file = {
+				url: file,
+				filename: file
+			}
+		} // if
+		
 		
 		// Check if this file already exists loaded in. Only unique filenames are saved, so this should only return a single item in the array.
-		let libraryEntry = obj.retrieveByFilenames( [filename] )[0];
+		let libraryEntry = obj.retrieveByFilenames( [file.filename] )[0];
 		if(libraryEntry){
 			return libraryEntry
 		} else {	
 			// Initiate loading. After loading if the file has loaded correctly it has some content and can be added to internal storage.
-			let fileobj = new classref(filename);
+			let fileobj = new classref(file, requester);
 			fileobj.load()
 			fileobj.promise.then(fileobj_ => obj.store(fileobj_))
 			// obj.store(fileobj)
