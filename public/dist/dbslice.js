@@ -689,20 +689,17 @@
       test: function test(variable, testval, filename) {
         // `variable' needs to be the first input!
         // Return a promise or a fully classified variable.
+        var testobj = this;
+
         switch (testval.split(".").pop()) {
           case "json":
           case "csv":
-            // Try to classify the testval as a file. The requester is the metadata file for which the variables are being classified.
-            var testFile = new onDemandFile({
-              url: testval,
-              filename: testval
-            }, filename);
-            return this.testAsFile(variable, testFile);
+            // The requester is the metadata file for which the variables are being classified.					
+            return testobj.testAsFile(variable, testval, filename);
 
           default:
-            // Unsupported extension.
-            // Try to see if it's a date!
-            return this.defaultclassification(variable);
+            // Unsupported extension - treat as a regular string. A string could be a date.	
+            return testobj.testAsDatetime(variable, testval);
         } // switch
 
       },
@@ -715,22 +712,15 @@
         return variable;
       },
       // defaultclassification
-      testAsDate: function testAsDate(variable, testval) {
-        // How to handle dates actually? categorical/ordinal, datetime/string - has to be specific format - `datetime'. The appropriate format will have to be identified and stored too. Or maybe we should just convert the data as it's loaded? Probably more sensible.
-        var testobj = this;
-        variable.category = "ordinal";
-        variable.type = "datetime";
-        variable.supportedCategories = testobj.supportedCategories["datetime"];
-        return variable;
-      },
-      // testAsDate
-      testAsFile: function testAsFile(variable, testFile) {
+      testAsFile: function testAsFile(variable, testval, requester) {
         // Return fully classified variable object.
-        var testobj = this;
-        testFile.load(); // What can go wrong:
-        // file is not found
-        // file has wrong content
-        // Why Promise.all ??
+        var testobj = this; // Make a testfile object to load the content.
+
+        var testFile = new onDemandFile({
+          url: testval,
+          filename: testval
+        }, requester);
+        testFile.load(); // Why Promise.all ??
         // Below 'fileobj' represents 'testFile'.
 
         return Promise.all([testFile.promise]).then(function (fileobj) {
@@ -747,7 +737,86 @@
           } // try
 
         }); // Promise.all().then
-      } // testAsFile
+      },
+      // testAsFile
+      testAsDatetime: function testAsDatetime(variable, testval) {
+        // But for datetimes it's possible that the row will have mixed formats. In that case it's only fair to allow the variable to be used as a date if all the values can be converted no? Leave as is for now, the others should just return as null, and then that can be handled upon drawing.
+        var testobj = this;
+        var testdate = testobj.string2datetime(testval);
+
+        if (testdate) {
+          variable.category = "ordinal";
+          variable.type = "datetime";
+          variable.supportedCategories = testobj.supportedCategories["datetime"];
+        } else {
+          testobj.defaultclassification(variable);
+        } // if
+
+
+        return variable;
+      },
+      // testAsDatetime
+      string2datetime: function string2datetime(testval) {
+        /* FORMAT DESIGNATORS
+        SECOND
+        	%f - microseconds as a decimal number [000000, 999999].
+        	%L - milliseconds as a decimal number [000, 999].
+        	%Q - milliseconds since UNIX epoch.
+        	%s - seconds since UNIX epoch.
+        	%S - second as a decimal number [00,61].
+        		MINUTE
+        	%M - minute as a decimal number [00,59].
+        		HOUR
+        	%H - hour (24-hour clock) as a decimal number [00,23].
+        	%I - hour (12-hour clock) as a decimal number [01,12].
+        	%p - either AM or PM.*
+        		DAY
+        	%a - abbreviated weekday name.*
+        	%A - full weekday name.*
+        	%j - day of the year as a decimal number [001,366].
+        	%d - zero-padded day of the month as a decimal number [01,31].
+        	%e - space-padded day of the month as a decimal number [ 1,31];
+        	%u - Monday-based (ISO 8601) weekday as a decimal number [1,7].
+        	%w - Sunday-based weekday as a decimal number [0,6].
+        		WEEK
+        	%U - Sunday-based week of the year as a decimal number [00,53].
+        	%W - Monday-based week of the year as a decimal number [00,53].
+        	%V - ISO 8601 week of the year as a decimal number [01, 53].
+        		MONTH
+        	%b - abbreviated month name.*
+        	%B - full month name.*
+        	%m - month as a decimal number [01,12].
+        		QUARTER
+        	%q - quarter of the year as a decimal number [1,4].
+        		YEAR
+        	%g - ISO 8601 week-based year without century as a decimal number [00,99].
+        	%G - ISO 8601 week-based year with century as a decimal number.
+        	%y - year without century as a decimal number [00,99].
+        	%Y - year with century as a decimal number, such as 1999.
+        		MISC
+        	%Z - time zone offset, such as -0700, -07:00, -07, or Z.
+        	%% - a literal percent sign (%).
+        			%c - the locale’s date and time, such as %x, %X.*
+        	%x - the locale’s date, such as %-m/%-d/%Y.*
+        	%X - the locale’s time, such as %-I:%M:%S %p.*
+        */
+        // Four digit year format will successfully read a two digit year input string. Instead of setting bounds on the date just make sure the 2-digit-year format (%y) is tried before the 4-digit-year format (%Y).
+        var supportedDatetimeFormats = ["%d/%m/%y", "%d-%m-%y", "%d.%m.%y", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y"];
+        var datetime = null; // Can't break out of a forEach... Iterating for(let format in ...) returned the index instead of the string value...
+
+        for (var i = 0; i < supportedDatetimeFormats.length; i++) {
+          var format = supportedDatetimeFormats[i];
+          var t = d3.timeParse(format);
+          datetime = t(testval); // Dates that only have two digits to denote the year are automatically set to the latest year with those two ending digits by d3.timeParse.
+
+          if (datetime) {
+            break;
+          }
+        } // for
+
+
+        return datetime;
+      } // string2datetime
 
     },
     // string
@@ -808,7 +877,16 @@
 
         return Promise.all(testPromises).then(function (variableClassification) {
           // The promises update the variable classification into the file object directly.
-          // obj.content.categories = variableClassification
+          // If any variables have been identified as datetypes, then convert them all to datetypes here to save the hassle for later.
+          obj.content.variables.forEach(function (variable) {
+            if (variable.type == "datetime") {
+              obj.content.data.forEach(function (row) {
+                row[variable.name] = supportedVariableTypes.string.string2datetime(row[variable.name]);
+              }); // forEach
+            } // if
+
+          }); // forEach
+
           return obj;
         });
       } // classifyvariables
@@ -11341,7 +11419,10 @@
           case "metadataFile":
             // Not easy to mutate, as the format of the content may not be correct.
             mutatedobj = new metadataFile$1(obj);
-            mutatedobj.content = obj.content;
+            mutatedobj.content = {
+              data: obj.content.data,
+              variables: obj.content.variables
+            };
             mutatedobj.promise = mutatedobj.classifyvariables();
             break;
 

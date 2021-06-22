@@ -92,9 +92,6 @@ export default class metadatamanager {
 		
 		
 
-		// Merging progressively stores the users inputs on how to merge the metadata.
-		obj.mergerer = new metadatamerger( obj.metadatafiles ); 
-		obj.node = obj.mergerer.node;
 		
 		
 		

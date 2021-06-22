@@ -19,7 +19,10 @@ export default class userFile extends dbsliceFile {
 				// Not easy to mutate, as the format of the content may not be correct.
 				mutatedobj = new metadataFile(obj)
 				
-				mutatedobj.content = obj.content
+				mutatedobj.content = {
+					data: obj.content.data,
+					variables: obj.content.variables
+				}
 				mutatedobj.promise = mutatedobj.classifyvariables();
 				
 			  break;
