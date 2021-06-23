@@ -31,7 +31,7 @@ export default class dbslicefilelibrary extends filelibrary {
 		let obj = this;		
 		
 		files.forEach(file=>{
-			obj.single(userFile, file)
+			obj.single(userFile, file, "drag & drop")
 		}) // forEach
 		
 	} // dragdropped

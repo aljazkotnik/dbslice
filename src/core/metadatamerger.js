@@ -4,6 +4,8 @@ import metadataFile from "./supportedfiles/metadataFile.js";
 import {makeObservable, observable, autorun, action, computed} from "mobx";
 
 
+// Make this module completely standalone again? But I do want to check if certain variables were classed incorrectly...
+
 
 /*
 When collecting the merge information:
@@ -23,6 +25,18 @@ One thought is to also allow only comparable types to be merged. Thisis done by 
 
 // Declare the necessary css here.
 let css = {
+  card: `
+	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+	  transition: 0.3s;
+	  border-radius: 5px;
+	  background-color: gainsboro;
+	  width: 80%;
+	  max-height: 90%;
+	  margin-left: auto;
+	  margin-right: auto;
+	  padding: 4px;
+  `,
+	
   btn: `
 	  border: none;
 	  border-radius: 12px;
@@ -39,6 +53,11 @@ let css = {
 	  border-radius: 12px;
 	  text-align: center;
 	  text-decoration: none;
+  `,
+  
+  btnSubmit: `
+	background-color: mediumSeaGreen; 
+	color: white;
   `,
   
   btnLegend: `
@@ -84,7 +103,7 @@ let css = {
 
 
 
-// The html constructor
+// The html constructor - split the templates out?
 class template{
 	
 	constructor(files, categories){
@@ -138,22 +157,32 @@ class template{
 
 	backbone(){
 		// The interactive content goes into `div.body'.
+		
+		// There is no title and fa-exclamation-triangle toggle button here because the functionality for tht cannot be appended here. Instead this is all the functionality needed to just perform the merging.
 		let obj = this;
 		return `
-		<div>
-		  <div class="legend">
-		    <div>
+		  <div class="menu-card" style="${ css.card }">
+		
+			<h2 style="display: inline;">Metadata merging:</h2>
+			
+			<div class="legend">
+			  <div>
+			  </div>
 			</div>
-		  </div>
-		 
-		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
-			<div></div>
-		  </div>
-		  
-		  <div>
-			<button class="submit" style="${ css.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
-		  </div>
-		</div>  
+			 
+			<div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
+			  <div>
+			  </div>
+			</div>
+			
+			
+			
+			<div>
+			  <button class="submit" style="${ css.btn + css.btnSubmit }">Submit</button>
+		    </div>
+			
+
+		  </div>		
 		`
 		
 	} // app
@@ -560,7 +589,6 @@ export default class metadatamerger {
 		
 		makeObservable(obj, {
 			files: observable,
-			merginginfo: observable,
 			categories: computed,
 			updatefiles: action,
 			submit: action
@@ -571,11 +599,16 @@ export default class metadatamerger {
 		
 	} // constructor
 	
-	updatefiles(files){
-		let obj = this;
-		obj.files = files;
-	} // updatefiles
 	
+	get categories(){
+		let obj = this;
+		return unique( obj.files.reduce((acc, fileobj)=>{
+			acc = acc.concat(fileobj.content.variables.map(v=>v.category));
+			return acc
+		}, []) )
+	} // categories
+
+
 	update(){
 		let obj = this;
 		
@@ -604,30 +637,21 @@ export default class metadatamerger {
 				new variabledrag(draggable, categories, body, obj.builder.color)
 			})
 		}) // forEach
-	} // update
+	} // update	
 	
-
+	
+	// Outside actions
+	updatefiles(files){
+		let obj = this;
+		obj.files = files;
+	} // updatefiles
+	
 	
 	submit(){
 		let obj = this;
-		
-		// Collect the classification from the ui.
-		obj.merginginfo = obj.collectmerginginfo();
-		
-		
+		obj.merginginfo = obj.collectmerginginfo()
 	} // submit
 	
-	// How to keep track of the merging information. It should be redone everytime a new merging file is loaded. Otherwise it should keep track of what the user selected.
-	
-	
-	
-	get categories(){
-		let obj = this;
-		return unique( obj.files.reduce((acc, fileobj)=>{
-			acc = acc.concat(fileobj.content.variables.map(v=>v.category));
-			return acc
-		}, []) )
-	} // categories
 	
 	collectmerginginfo(){
 		// Collect the merging info by looping over the identified categories and comparing the elements in the same position.

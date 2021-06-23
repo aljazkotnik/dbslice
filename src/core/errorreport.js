@@ -24,18 +24,9 @@ let css = {
 	  cursor: pointer;
   `,
   
-  submitBtn: `
+  btnSubmit: `
 	background-color: mediumSeaGreen; 
 	color: white;
-  `,
-
-  fullscreenContainer: `
-	  position: fixed;
-	  top: 0;
-	  bottom: 0;
-	  left: 0;
-	  right: 0;
-	  background: rgba(90, 90, 90, 0.5);
   `,
   
   card: `
@@ -47,7 +38,6 @@ let css = {
 	  max-height: 90%;
 	  margin-left: auto;
 	  margin-right: auto;
-	  margin-top: 40px;
 	  padding: 4px;
   `
 } // css
@@ -63,7 +53,6 @@ function html2element(html){
 
 var template = {
 	body: `
-		<div style="${ css.fullscreenContainer }">
 		<div style="${ css.card }">
 		  <div>
 			<div>
@@ -83,10 +72,9 @@ var template = {
 		  
 		  
 		  <div>
-			<button class="submit" style="${ css.btn + css.submitBtn }">Understood</button>
+			<button class="submit" style="${ css.btn + css.btnSubmit }">Understood</button>
 		  </div>
 		  
-		</div>
 		</div>
 	`,
 	

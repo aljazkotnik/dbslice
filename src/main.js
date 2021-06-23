@@ -6,7 +6,7 @@ import dbslicefilelibrary from "./core/dbslicefilelibrary.js";
 
 // import metadatamerger from "./core/metadatamerger.js";
 // import errorreport from "./core/errorreport.js";
-import metadatamanager from "./core/metadatamanager.js";
+import metadatamenu from "./core/metadatamenu.js";
 
 let fullscreenMenusContainer = document.getElementById("fullscreen-menu-container");
 
@@ -54,7 +54,7 @@ fullscreenMenusContainer.appendChild(errorreporter.node);
 */
 
 
-let M = new metadatamanager(library.files);
+let M = new metadatamenu(library.files);
 fullscreenMenusContainer.appendChild(M.node);
 
 

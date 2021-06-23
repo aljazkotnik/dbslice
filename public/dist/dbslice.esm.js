@@ -1,6 +1,5 @@
 import { makeObservable, action, observable, autorun, computed } from 'mobx';
 import 'd3-time-format';
-import 'crossfilter';
 import * as d3$1 from 'd3';
 
 // Arrays
@@ -1225,7 +1224,7 @@ class dbslicefilelibrary extends filelibrary {
 		let obj = this;		
 		
 		files.forEach(file=>{
-			obj.single(userFile, file);
+			obj.single(userFile, file, "drag & drop");
 		}); // forEach
 		
 	} // dragdropped
@@ -1379,6 +1378,9 @@ class dragnode {
 	
 } // dragdiv
 
+// Make this module completely standalone again? But I do want to check if certain variables were classed incorrectly...
+
+
 /*
 When collecting the merge information:
 	The data must be saved per category, and [filename, variable name, and variable alias] triplets. On a variable DOM level the variable and file names must be available. On a category DOM level the category name must be available.
@@ -1397,6 +1399,18 @@ One thought is to also allow only comparable types to be merged. Thisis done by 
 
 // Declare the necessary css here.
 let css$2 = {
+  card: `
+	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+	  transition: 0.3s;
+	  border-radius: 5px;
+	  background-color: gainsboro;
+	  width: 80%;
+	  max-height: 90%;
+	  margin-left: auto;
+	  margin-right: auto;
+	  padding: 4px;
+  `,
+	
   btn: `
 	  border: none;
 	  border-radius: 12px;
@@ -1413,6 +1427,11 @@ let css$2 = {
 	  border-radius: 12px;
 	  text-align: center;
 	  text-decoration: none;
+  `,
+  
+  btnSubmit: `
+	background-color: mediumSeaGreen; 
+	color: white;
   `,
   
   btnLegend: `
@@ -1458,7 +1477,7 @@ let css$2 = {
 
 
 
-// The html constructor
+// The html constructor - split the templates out?
 class template$2{
 	
 	constructor(files, categories){
@@ -1512,20 +1531,28 @@ class template$2{
 
 	backbone(){
 		return `
-		<div>
-		  <div class="legend">
-		    <div>
+		  <div class="menu-card" style="${ css$2.card }">
+		
+			<h2 style="display: inline;">Metadata merging:</h2>
+			
+			<div class="legend">
+			  <div>
+			  </div>
 			</div>
-		  </div>
-		 
-		  <div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
-			<div></div>
-		  </div>
-		  
-		  <div>
-			<button class="submit" style="${ css$2.btn + "background-color: mediumSeaGreen; color: white;" }">Submit</button>
-		  </div>
-		</div>  
+			 
+			<div class="body" style="overflow-y: scroll; overflow-x: scroll; height: 400px;">
+			  <div>
+			  </div>
+			</div>
+			
+			
+			
+			<div>
+			  <button class="submit" style="${ css$2.btn + css$2.btnSubmit }">Submit</button>
+		    </div>
+			
+
+		  </div>		
 		`
 		
 	} // app
@@ -1929,7 +1956,6 @@ class metadatamerger {
 		
 		makeObservable(obj, {
 			files: observable,
-			merginginfo: observable,
 			categories: computed,
 			updatefiles: action,
 			submit: action
@@ -1940,11 +1966,16 @@ class metadatamerger {
 		
 	} // constructor
 	
-	updatefiles(files){
-		let obj = this;
-		obj.files = files;
-	} // updatefiles
 	
+	get categories(){
+		let obj = this;
+		return unique( obj.files.reduce((acc, fileobj)=>{
+			acc = acc.concat(fileobj.content.variables.map(v=>v.category));
+			return acc
+		}, []) )
+	} // categories
+
+
 	update(){
 		let obj = this;
 		
@@ -1973,30 +2004,21 @@ class metadatamerger {
 				new variabledrag(draggable, categories, body, obj.builder.color);
 			});
 		}); // forEach
-	} // update
+	} // update	
 	
-
+	
+	// Outside actions
+	updatefiles(files){
+		let obj = this;
+		obj.files = files;
+	} // updatefiles
+	
 	
 	submit(){
 		let obj = this;
-		
-		// Collect the classification from the ui.
 		obj.merginginfo = obj.collectmerginginfo();
-		
-		
 	} // submit
 	
-	// How to keep track of the merging information. It should be redone everytime a new merging file is loaded. Otherwise it should keep track of what the user selected.
-	
-	
-	
-	get categories(){
-		let obj = this;
-		return unique( obj.files.reduce((acc, fileobj)=>{
-			acc = acc.concat(fileobj.content.variables.map(v=>v.category));
-			return acc
-		}, []) )
-	} // categories
 	
 	collectmerginginfo(){
 		// Collect the merging info by looping over the identified categories and comparing the elements in the same position.
@@ -2176,18 +2198,9 @@ let css$1 = {
 	  cursor: pointer;
   `,
   
-  submitBtn: `
+  btnSubmit: `
 	background-color: mediumSeaGreen; 
 	color: white;
-  `,
-
-  fullscreenContainer: `
-	  position: fixed;
-	  top: 0;
-	  bottom: 0;
-	  left: 0;
-	  right: 0;
-	  background: rgba(90, 90, 90, 0.5);
   `,
   
   card: `
@@ -2199,7 +2212,6 @@ let css$1 = {
 	  max-height: 90%;
 	  margin-left: auto;
 	  margin-right: auto;
-	  margin-top: 40px;
 	  padding: 4px;
   `
 }; // css
@@ -2215,7 +2227,6 @@ function html2element$1(html){
 
 var template$1 = {
 	body: `
-		<div style="${ css$1.fullscreenContainer }">
 		<div style="${ css$1.card }">
 		  <div>
 			<div>
@@ -2235,10 +2246,9 @@ var template$1 = {
 		  
 		  
 		  <div>
-			<button class="submit" style="${ css$1.btn + css$1.submitBtn }">Understood</button>
+			<button class="submit" style="${ css$1.btn + css$1.btnSubmit }">Understood</button>
 		  </div>
 		  
-		</div>
 		</div>
 	`,
 	
@@ -2309,92 +2319,45 @@ class errorreport {
 		
 } // metadatamerger
 
-// Turn cfDataManager into a class. Make it reactive if needed. Make sure it uses the devDependency of crossfilter.
-
-
-/* ARCHITECTURE CHANGE
-
-import {sessionManager} from "./sessionManager.js";
-import {color} from "./color.js";
-
-// On cfChange the color options and the user interface need to be changed.
-color.settings.options = dbsliceData.data.categoricalProperties
-sessionManager.resolve.ui.dataAndSessionChange()
-
-*/
-
-
-// WORK IN PROGRESS
-
-/* 1.) DIMENSION MANAGEMENT
-
-How to handle the creation of dimensions? Maybe we should think about the pruning of values? For example: remove all variables that are the same for all of the entries?
-
-*/
-
-
-/* 2.) DATA FLOW 
-
-	How should the data enter? The loading files should be taken care of by the library, the metadata combining by a combiner, and the data manipulations by the data holder.
-	
-	Metadata flow is: loader -> combiner -> datastore -> plots
-	On-demand flow is: loader -> plots
-	
-	
-	How will reactive plots access their data? How will plots in general access their data? For metadata this could be simple, the current selection could just be a computed value, and all other plots would just observe it. How do I pass in an observed value?
-	
-	How would on-demand plots get their data? Would they observe the storage to see if the loaded files match what they need? And maybe then they would draw one item at a time? Maybe experiment with this.
-	
-	
-	Throttling the loading of the on-demand data to ensure interactivity. Instead of having the button let dbslice load the on-demand data needed on the fly (the library helps here enormously!), but only if there is sufficient time to do it.
-
-*/
-
-
-
-
-/* 3.) HANDLING DATETIME DATA */
-
-
-
-/* 4.) INCLUDE THE FILTERING */
-
-
-
-
 let css = {
 	
   btn: `
-	  border: none;
-	  border-radius: 12px;
-	  text-align: center;
-	  text-decoration: none;
-	  display: inline-block;
-	  font-size: 20px;
-	  margin: 4px 2px;
-	  cursor: pointer;
+	border: none;
+	border-radius: 12px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 20px;
+	margin: 4px 2px;
+	cursor: pointer;
   `,
 	
   fullscreenContainer: `
-	  position: fixed;
-	  top: 0;
-	  bottom: 0;
-	  left: 0;
-	  right: 0;
-	  background: rgba(90, 90, 90, 0.5);
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: rgba(90, 90, 90, 0.5);
   `,
   
   card: `
-	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	  transition: 0.3s;
-	  border-radius: 5px;
-	  background-color: gainsboro;
-	  width: 80%;
-	  max-height: 90%;
-	  margin-left: auto;
-	  margin-right: auto;
-	  margin-top: 40px;
-	  padding: 4px;
+	box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+	transition: 0.3s;
+	border-radius: 5px;
+	background-color: gainsboro;
+	width: 80%;
+	max-height: 90%;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 4px;
+  `,
+  
+  cardTitle: `
+	width: 80%;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 40px;
   `
 }; // css
 
@@ -2404,23 +2367,20 @@ let css = {
 
 var template = `
 <div style="${ css.fullscreenContainer }">
-  <div class="menu-card" style="${ css.card }">
   
-    
-	<div class="menu-header">
-	  <h2 style="display: inline;">Metadata merging:</h2>
-	
-	  <button class="toggle" style="${ css.btn + "float: right;" }">
-		<i class="fa fa-exclamation-triangle"></i>
-	  </button>
-	</div>
-	
-	
-	<div class="menu-body"><div>
-	
+  <div style="${ css.cardTitle }">
+	<button class="showerrorreport" style="${ css.btn + "float: right;" }">
+	  <i class="fa fa-exclamation-triangle"></i>
+	</button>
   </div>
+  
+  <div class="menu-body">
+  </div>
+  
 </div>
 `;
+
+
 
 
 function html2element(html){
@@ -2438,7 +2398,7 @@ function html2element(html){
 // The metadata can be introduced as a reference bject, and then an autorun can be implemented inside. Ok, so then implement the file loader first.
 
 
-class metadatamanager {
+class metadatamenu {
 
 	constructor(files){
 		
@@ -2447,31 +2407,38 @@ class metadatamanager {
 		let obj = this;
 		obj.files = files;
 		
-		// Make the class observable.
-		makeObservable(obj, {
-			metadatafiles: computed
-        });
+		
 		
 		
 		// make the node that can be appended to the DOM.
 		obj.node = html2element(template);
-		let container = obj.node.querySelector("div.menu-body");
+		obj.container = obj.node.querySelector("div.menu-body");
+		
 		
 		// Make the modules that need access to the DOM.
 		obj.merger = new metadatamerger([]);
-		container.appendChild(obj.merger.node);
-		
-		console.log(obj.merger);
-		
-		obj.errorreport = new errorreport( obj.errors );
 		
 		
+		// But control hte button functionality from outside? Otherwise it's tricky to control the menu behavior.
+		obj.merger.node.querySelector("button.submit").addEventListener("click", ()=>{ obj.submit(); });
+		
+		obj.errorreport = new errorreport([]);
+		
+		
+		// Add functionality to show/hide the error report.
+		obj.node.querySelector("button.showerrorreport").addEventListener("click", ()=>{ obj.showerrorreport(); });
+		obj.errorreport.node.querySelector("button.submit").addEventListener("click", ()=>{ obj.hideerrorreport(); });
 		
 		// Should it be controlled here??
 		
+		// Make the class observable.
+		makeObservable(obj, {
+			metadatafiles: computed,
+			submit: action
+        });
 		
-		autorun(()=>{obj.update();});
-		autorun(()=>{obj.show();});
+		
+		autorun(()=>{obj.showmerging();});
 		
 	} // constructor
 	
@@ -2494,34 +2461,25 @@ class metadatamanager {
 	} // errors
 	
 	
-	// When the metadata changes the merging UI should be called, and after the user clicks it the filtermanager should be updated.
-	update(){
+	
+	
+	
+	
+	submit(){
+		// The user has confirmed the metadata merging. Now collect the merging info, create teh metadata, and update the crossfilter. Hide the merging UI.
 		let obj = this;
 		
-		// This should ONLY run when the merge info changes.
+		let merginginfo = obj.merger.collectmerginginfo();
+		console.log("Merge and update metadata", merginginfo);
 		
-		
-		
-		// How to control the switch between the merging and the error reports? Always have the button available? But how can I just swap the contents in and out then? Turn hte button on and off? And switch the titles in here?
-		
-		console.log("Use merging info to create metadata and update crossfilter", obj.merger.merginginfo);
-		
-		
-		
-		// Hide the menu.
 		obj.hide();
-		
-	} // update
+	} // submit
 	
 	
+	// Show hide the entire menu.
 	show(){
 		// Show when the metadata files change - new data was loaded. This should work on autorun too no? Most importantly, it should work on a button press.
 		let obj = this;
-		
-		
-		obj.merger.updatefiles( obj.metadatafiles );
-		
-		
 		obj.node.style.display = "";
 	} // show
 	
@@ -2531,6 +2489,32 @@ class metadatamanager {
 	} // 
 	
 	
+	// Show individual menu modules.
+	showerrorreport(){
+		// Toggle from the metadata merging to the error report.
+		let obj = this;
+		if( obj.container.firstElementChild == obj.merger.node ){
+			obj.container.removeChild( obj.merger.node );
+		} // if
+		obj.container.appendChild( obj.errorreport.node );
+	} // showerrorreport
+	
+	hideerrorreport(){
+		// Toggle from the metadata merging to the error report.
+		let obj = this;
+		if( obj.container.firstElementChild == obj.errorreport.node ){
+			obj.container.removeChild( obj.errorreport.node );
+		} // if
+		obj.container.appendChild( obj.merger.node );
+	} // hideerrorreport
+	
+	// It does go into showmerging. Why does that one not update itself accordingly?? Maybe it can be untangled a bit?
+	showmerging(){
+		let obj = this;
+		obj.merger.updatefiles( obj.metadatafiles );
+		obj.hideerrorreport();
+		obj.show();
+	} // showmergingui
 	
 		
 } // metadatamanager
@@ -2583,7 +2567,7 @@ fullscreenMenusContainer.appendChild(errorreporter.node);
 */
 
 
-let M = new metadatamanager(library.files);
+let M = new metadatamenu(library.files);
 fullscreenMenusContainer.appendChild(M.node);
 
 
