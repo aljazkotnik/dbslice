@@ -1402,27 +1402,37 @@ class dragnode {
 	
 } // dragdiv
 
-// Make this module completely standalone again? But I do want to check if certain variables were classed incorrectly...
-
-
 /*
-When collecting the merge information:
-	The data must be saved per category, and [filename, variable name, and variable alias] triplets. On a variable DOM level the variable and file names must be available. On a category DOM level the category name must be available.
+The css is held in js form to allow the modules just be imported in the javascript, without having to add the css to the document separately.
 
-When interacting there are compatibility restrictions (e.g. an ordinal cannot be a url pointing to a 2d line file). Therefore at the variable DOM level the compatibility array for that variable must be accessible, as well as the category info for the categories the variable is being placed into.
+Another version of adding the css is to specify it in javascript objects, and when appending the html elements also append the styles. Just adding the styles directly is more simple for hte time being though.
 
-When using templates to create the DOM data objects cannot be bound to it using d3. Maybe have a split between the static and dynamic parts of the DOM?
-
-
-
-
-One thought is to also allow only comparable types to be merged. Thisis done by the categories already. Ordinals can only be numbers, for categoricals it doesn't matter, and on-demand variables can only be used for dedicated plots or as categoricals. Therefore it's not necessary to have an additional check.
+COMMON: card, btn
+METADATAMENU: fullscreenContainer, cardTitle
+ERRORREPORT: btn{Submit}
+METADATA MERGER: btn{Submit, Pill, Legend, Draggable, Ghost}, div{FileColumn, CategoryWrapper, Category}
 
 */
 
-
 // Declare the necessary css here.
-let css$2 = {
+let css = {
+	
+  fullscreenContainer: `
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: rgba(90, 90, 90, 0.5);
+  `,
+  
+  cardTitle: `
+	width: 80%;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 40px;
+  `,
+	
   card: `
 	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
 	  transition: 0.3s;
@@ -1499,8 +1509,6 @@ let css$2 = {
   
 }; // css
 
-
-
 // The html constructor - split the templates out?
 class template$2{
 	
@@ -1555,7 +1563,7 @@ class template$2{
 
 	backbone(){
 		return `
-		  <div class="menu-card" style="${ css$2.card }">
+		  <div class="menu-card" style="${ css.card }">
 		
 			<h2 style="display: inline;">Metadata merging:</h2>
 			
@@ -1572,7 +1580,7 @@ class template$2{
 			
 			
 			<div>
-			  <button class="submit" style="${ css$2.btn + css$2.btnSubmit }">Submit</button>
+			  <button class="submit" style="${ css.btn + css.btnSubmit }">Submit</button>
 		    </div>
 			
 
@@ -1604,7 +1612,7 @@ class template$2{
 		let obj = this;
 		
 		return `
-		  <div class="file" style="${ css$2.divFileColumn }">
+		  <div class="file" style="${ css.divFileColumn }">
 			<p style="text-align: center;">
 			  <strong>${ fileobj.filename }</strong>
 			</p>
@@ -1623,9 +1631,9 @@ class template$2{
 		let variables = fileobj.content.variables.filter(varobj=>varobj.category==category);
 		
 		return `
-		  <div style="${ css$2.divCategoryWrapper }">
+		  <div style="${ css.divCategoryWrapper }">
 			<div class="category ${ category }" 
-			     style="${ css$2.divCategory }"
+			     style="${ css.divCategory }"
 				 ownerfile="${ fileobj.filename }"
 			>
 			  ${ variables.map(variableobj=>obj.draggablebutton(variableobj)).join("") }
@@ -1658,19 +1666,19 @@ class template$2{
 		let fractionunique = variableobj.nunique == variableobj.n ? "" : `,  ${variableobj.nunique} / ${variableobj.n}`;
 		
 		let label = `${ variableobj.name } (${variableobj.type + fractionunique})`;
-		let cssstyle = css$2.btnPill + css$2.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
+		let cssstyle = css.btnPill + css.btnDraggable + `background-color: ${ obj.color(variableobj.category) };`;
 		let cssclasses = variableobj.supportedCategories.concat("draggable").join(" ");
 		return template$2.button(label, cssstyle, cssclasses, variableobj.name);
 	} // draggableButton
 
 	legendbutton(category){
 		let obj = this;
-		let cssstyle = css$2.btnPill + css$2.btnLegend + `background-color: ${ obj.color(category) };`;
+		let cssstyle = css.btnPill + css.btnLegend + `background-color: ${ obj.color(category) };`;
 		return template$2.button(category, cssstyle, "draggable");
 	} // draggableButton
 
 	static ghostbutton(classnames){
-		let cssstyle = css$2.btnPill + css$2.btnGhost;
+		let cssstyle = css.btnPill + css.btnGhost;
 		let cssclass = classnames ? `ghost ${classnames.join(" ")}` : "ghost";
 		return template$2.button("ghost", cssstyle, cssclass);		
 	} // ghostButton
@@ -1960,7 +1968,7 @@ class variabledrag extends dragnode{
 
 
 // The coordination of merging.
-class metadatamerger {
+class metadatamergingui {
 	constructor(files){
 		let obj = this;
 		
@@ -2200,46 +2208,6 @@ class metadatamerger {
 
 
 
-/*
-The error report requires very little interaction with the data - it only needs to read the reports.
-
-Maybe consider making a 'fullscreenmenu template', which would hold the basics?
-
-*/
-
-
-// Declare the necessary css here.
-let css$1 = {
-	
-  btn: `
-	  border: none;
-	  border-radius: 12px;
-	  text-align: center;
-	  text-decoration: none;
-	  display: inline-block;
-	  font-size: 20px;
-	  margin: 4px 2px;
-	  cursor: pointer;
-  `,
-  
-  btnSubmit: `
-	background-color: mediumSeaGreen; 
-	color: white;
-  `,
-  
-  card: `
-	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	  transition: 0.3s;
-	  border-radius: 5px;
-	  background-color: gainsboro;
-	  width: 80%;
-	  max-height: 90%;
-	  margin-left: auto;
-	  margin-right: auto;
-	  padding: 4px;
-  `
-}; // css
-
 
 
 // The html constructor
@@ -2251,7 +2219,7 @@ function html2element$1(html){
 
 var template$1 = {
 	body: `
-		<div style="${ css$1.card }">
+		<div style="${ css.card }">
 		  <div>
 			<div>
 			  
@@ -2270,7 +2238,7 @@ var template$1 = {
 		  
 		  
 		  <div>
-			<button class="submit" style="${ css$1.btn + css$1.btnSubmit }">Understood</button>
+			<button class="submit" style="${ css.btn + css.btnSubmit }">Understood</button>
 		  </div>
 		  
 		</div>
@@ -2343,52 +2311,6 @@ class errorreport {
 		
 } // metadatamerger
 
-let css = {
-	
-  btn: `
-	border: none;
-	border-radius: 12px;
-	text-align: center;
-	text-decoration: none;
-	display: inline-block;
-	font-size: 20px;
-	margin: 4px 2px;
-	cursor: pointer;
-  `,
-	
-  fullscreenContainer: `
-	position: fixed;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	background: rgba(90, 90, 90, 0.5);
-  `,
-  
-  card: `
-	box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	transition: 0.3s;
-	border-radius: 5px;
-	background-color: gainsboro;
-	width: 80%;
-	max-height: 90%;
-	margin-left: auto;
-	margin-right: auto;
-	padding: 4px;
-  `,
-  
-  cardTitle: `
-	width: 80%;
-	margin-left: auto;
-	margin-right: auto;
-	margin-top: 40px;
-  `
-}; // css
-
-
-
-
-
 var template = `
 <div style="${ css.fullscreenContainer }">
   
@@ -2431,16 +2353,13 @@ class metadatamenu {
 		let obj = this;
 		obj.files = files;
 		
-		
-		
-		
 		// make the node that can be appended to the DOM.
 		obj.node = html2element(template);
 		obj.container = obj.node.querySelector("div.menu-body");
 		
 		
 		// Make the modules that need access to the DOM.
-		obj.merger = new metadatamerger([]);
+		obj.merger = new metadatamergingui([]);
 		
 		
 		// But control hte button functionality from outside? Otherwise it's tricky to control the menu behavior.
@@ -2545,6 +2464,8 @@ class metadatamenu {
 
 // Entry point for the bundling. Build up the session here. Then index.html just runs the bundled javascript file.
 
+
+// Get the container that was setup in index.html.
 let fullscreenMenusContainer = document.getElementById("fullscreen-menu-container");
 
 
@@ -2552,47 +2473,20 @@ let fullscreenMenusContainer = document.getElementById("fullscreen-menu-containe
 let library = new dbslicefilelibrary();
 console.log(library);
 
-// Dragging and dropping
+// Dragging and dropping - there is a background element in index.html that is intended to allow files to be dropped anywhere.
 let target = document.getElementById("dragAndDrop");
 target.ondrop = (ev)=>{library.ondrop(ev);};
 target.ondragover = (ev)=>{library.ondragover(ev);};
 
 
-/*
-
-// HERE IM ASSUMING ALL THE FILES IN THE LIBRARY ARE METADATA FILES!
-// Maybe this should be wrapped in hte metadataManager anyway. It's all in hte pipeline.
-let mergerer = new metadatamerger(library.files);
+// Make the metadata menu. Make the menu support drag and drop. Add an event to a button in index.html to open the menu.
+let mergerer = new metadatamenu(library.files);
 fullscreenMenusContainer.appendChild(mergerer.node);
-document.getElementById("merging-show").addEventListener("click", ()=>{mergerer.show()} );
+mergerer.node.ondrop = (ev)=>{library.ondrop(ev);};
+mergerer.node.ondragover = (ev)=>{library.ondragover(ev);};
+document.getElementById("merging-show").addEventListener("click", ()=>{
+	mergerer.showmerging();
+});
 
 
-// Fake errors with only the relevant attributes:
-let errorfiles = [
-  {
-    filename: "_fileManager.js",
-    requester: "User",
-    errors: [
-        {message: "LoaderError: Unsupported Extension"}
-    ]
-  },
-  
-  {
-    filename: "_fake file.js",
-    requester: "drag & drop",
-    errors: [
-        {message: "LoaderError: Unsupported content format"}
-    ]
-  }
-];
-let errorreporter = new errorreport(errorfiles);
-fullscreenMenusContainer.appendChild(errorreporter.node);
-
-*/
-
-
-let M = new metadatamenu(library.files);
-fullscreenMenusContainer.appendChild(M.node);
-
-
-console.log(M);
+// Make a fi

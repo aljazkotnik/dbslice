@@ -1,9 +1,11 @@
-import { unique } from "./helpers.js";
+import { unique } from "../helpers.js";
 
+// Superclass
 import filelibrary from "./filelibrary.js";
 
-import userFile from "./supportedfiles/userFile.js";
-import metadataFile from "./supportedfiles/metadataFile.js";
+// File types that the library focuses on handling. `metadataFile' is needed so that an array containing all metadata files can be a mobx `computed' variable. `userFile' is needed to handle drag & drop events.
+import userFile from "../supportedfiles/userFile.js";
+import metadataFile from "../supportedfiles/metadataFile.js";
 
 
 // Extend that library here so that it can also handle the drag-dropped events.

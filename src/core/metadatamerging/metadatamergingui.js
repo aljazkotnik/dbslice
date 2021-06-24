@@ -1,10 +1,7 @@
-import {unique} from "./helpers.js";
-import dragnode from "./dragnode.js";
-import metadataFile from "./supportedfiles/metadataFile.js";
+import {unique} from "../helpers.js";
+import dragnode from "../dragnode.js";
+import metadataFile from "../supportedfiles/metadataFile.js";
 import {makeObservable, observable, autorun, action, computed} from "mobx";
-
-
-// Make this module completely standalone again? But I do want to check if certain variables were classed incorrectly...
 
 
 /*
@@ -23,83 +20,8 @@ One thought is to also allow only comparable types to be merged. Thisis done by 
 */
 
 
-// Declare the necessary css here.
-let css = {
-  card: `
-	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	  transition: 0.3s;
-	  border-radius: 5px;
-	  background-color: gainsboro;
-	  width: 80%;
-	  max-height: 90%;
-	  margin-left: auto;
-	  margin-right: auto;
-	  padding: 4px;
-  `,
-	
-  btn: `
-	  border: none;
-	  border-radius: 12px;
-	  text-align: center;
-	  text-decoration: none;
-	  display: inline-block;
-	  font-size: 20px;
-	  margin: 4px 2px;
-	  cursor: pointer;
-  `,
-  
-  btnPill: `
-      border: none;
-	  border-radius: 12px;
-	  text-align: center;
-	  text-decoration: none;
-  `,
-  
-  btnSubmit: `
-	background-color: mediumSeaGreen; 
-	color: white;
-  `,
-  
-  btnLegend: `
-	  display: inline-block;
-	  cursor: default;
-  `,
-  
-  btnDraggable: `
-	  display: block;
-	  cursor: pointer;
-	  position: relative;
-	  white-space: nowrap;
-  `,
-  
-  btnGhost: `
-	  display: block;
-	  color: gainsboro;
-	  background-color: gainsboro;
-	  pointer: default;
-  `,
- 
-  divFileColumn: `
-	  display: table-cell;
-	  vertical-align: top;
-  `,
-  
-  
-  divCategoryWrapper: `
-	  display: table-row; 
-	  vertical-align: top;
-  `,
-  
-  divCategory: `
-	  display: table-cell; 
-	  vertical-align: top; 
-	  border-style: solid; 
-	  border-radius: 15px;
-	  border-width: 0px;
-	  padding: 3px;
-  `
-  
-} // css
+// Import the css declaration as a javascript object.
+import {css} from "./mergingcss.js";
 
 
 
@@ -569,7 +491,7 @@ class variabledrag extends dragnode{
 
 
 // The coordination of merging.
-export default class metadatamerger {
+export default class metadatamergingui {
 	constructor(files){
 		let obj = this;
 		

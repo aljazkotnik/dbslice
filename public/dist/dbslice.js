@@ -9498,22 +9498,20 @@
   }(); // dragdiv
 
   /*
-  When collecting the merge information:
-  	The data must be saved per category, and [filename, variable name, and variable alias] triplets. On a variable DOM level the variable and file names must be available. On a category DOM level the category name must be available.
+  The css is held in js form to allow the modules just be imported in the javascript, without having to add the css to the document separately.
 
-  When interacting there are compatibility restrictions (e.g. an ordinal cannot be a url pointing to a 2d line file). Therefore at the variable DOM level the compatibility array for that variable must be accessible, as well as the category info for the categories the variable is being placed into.
+  Another version of adding the css is to specify it in javascript objects, and when appending the html elements also append the styles. Just adding the styles directly is more simple for hte time being though.
 
-  When using templates to create the DOM data objects cannot be bound to it using d3. Maybe have a split between the static and dynamic parts of the DOM?
-
-
-
-
-  One thought is to also allow only comparable types to be merged. Thisis done by the categories already. Ordinals can only be numbers, for categoricals it doesn't matter, and on-demand variables can only be used for dedicated plots or as categoricals. Therefore it's not necessary to have an additional check.
+  COMMON: card, btn
+  METADATAMENU: fullscreenContainer, cardTitle
+  ERRORREPORT: btn{Submit}
+  METADATA MERGER: btn{Submit, Pill, Legend, Draggable, Ghost}, div{FileColumn, CategoryWrapper, Category}
 
   */
   // Declare the necessary css here.
-
-  var css$2 = {
+  var css = {
+    fullscreenContainer: "\n\tposition: fixed;\n\ttop: 0;\n\tbottom: 0;\n\tleft: 0;\n\tright: 0;\n\tbackground: rgba(90, 90, 90, 0.5);\n  ",
+    cardTitle: "\n\twidth: 80%;\n\tmargin-left: auto;\n\tmargin-right: auto;\n\tmargin-top: 40px;\n  ",
     card: "\n\t  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);\n\t  transition: 0.3s;\n\t  border-radius: 5px;\n\t  background-color: gainsboro;\n\t  width: 80%;\n\t  max-height: 90%;\n\t  margin-left: auto;\n\t  margin-right: auto;\n\t  padding: 4px;\n  ",
     btn: "\n\t  border: none;\n\t  border-radius: 12px;\n\t  text-align: center;\n\t  text-decoration: none;\n\t  display: inline-block;\n\t  font-size: 20px;\n\t  margin: 4px 2px;\n\t  cursor: pointer;\n  ",
     btnPill: "\n      border: none;\n\t  border-radius: 12px;\n\t  text-align: center;\n\t  text-decoration: none;\n  ",
@@ -9525,7 +9523,6 @@
     divCategoryWrapper: "\n\t  display: table-row; \n\t  vertical-align: top;\n  ",
     divCategory: "\n\t  display: table-cell; \n\t  vertical-align: top; \n\t  border-style: solid; \n\t  border-radius: 15px;\n\t  border-width: 0px;\n\t  padding: 3px;\n  "
   }; // css
-  // The html constructor - split the templates out?
 
   var template$2 = /*#__PURE__*/function () {
     function template(files, categories) {
@@ -9572,7 +9569,7 @@
     }, {
       key: "backbone",
       value: function backbone() {
-        return "\n\t\t  <div class=\"menu-card\" style=\"".concat(css$2.card, "\">\n\t\t\n\t\t\t<h2 style=\"display: inline;\">Metadata merging:</h2>\n\t\t\t\n\t\t\t<div class=\"legend\">\n\t\t\t  <div>\n\t\t\t  </div>\n\t\t\t</div>\n\t\t\t \n\t\t\t<div class=\"body\" style=\"overflow-y: scroll; overflow-x: scroll; height: 400px;\">\n\t\t\t  <div>\n\t\t\t  </div>\n\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t<div>\n\t\t\t  <button class=\"submit\" style=\"").concat(css$2.btn + css$2.btnSubmit, "\">Submit</button>\n\t\t    </div>\n\t\t\t\n\n\t\t  </div>\t\t\n\t\t");
+        return "\n\t\t  <div class=\"menu-card\" style=\"".concat(css.card, "\">\n\t\t\n\t\t\t<h2 style=\"display: inline;\">Metadata merging:</h2>\n\t\t\t\n\t\t\t<div class=\"legend\">\n\t\t\t  <div>\n\t\t\t  </div>\n\t\t\t</div>\n\t\t\t \n\t\t\t<div class=\"body\" style=\"overflow-y: scroll; overflow-x: scroll; height: 400px;\">\n\t\t\t  <div>\n\t\t\t  </div>\n\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t<div>\n\t\t\t  <button class=\"submit\" style=\"").concat(css.btn + css.btnSubmit, "\">Submit</button>\n\t\t    </div>\n\t\t\t\n\n\t\t  </div>\t\t\n\t\t");
       } // app
 
     }, {
@@ -9598,7 +9595,7 @@
       key: "filecolumn",
       value: function filecolumn(fileobj) {
         var obj = this;
-        return "\n\t\t  <div class=\"file\" style=\"".concat(css$2.divFileColumn, "\">\n\t\t\t<p style=\"text-align: center;\">\n\t\t\t  <strong>").concat(fileobj.filename, "</strong>\n\t\t\t</p>\n\t\t  \n\t\t\t").concat(obj.categories.map(function (category) {
+        return "\n\t\t  <div class=\"file\" style=\"".concat(css.divFileColumn, "\">\n\t\t\t<p style=\"text-align: center;\">\n\t\t\t  <strong>").concat(fileobj.filename, "</strong>\n\t\t\t</p>\n\t\t  \n\t\t\t").concat(obj.categories.map(function (category) {
           return obj.category(fileobj, category);
         }).join(""), "\n\t\t  \n\t\t  </div>\n\t\t");
       } // filecolumn
@@ -9610,7 +9607,7 @@
         var variables = fileobj.content.variables.filter(function (varobj) {
           return varobj.category == _category;
         });
-        return "\n\t\t  <div style=\"".concat(css$2.divCategoryWrapper, "\">\n\t\t\t<div class=\"category ").concat(_category, "\" \n\t\t\t     style=\"").concat(css$2.divCategory, "\"\n\t\t\t\t ownerfile=\"").concat(fileobj.filename, "\"\n\t\t\t>\n\t\t\t  ").concat(variables.map(function (variableobj) {
+        return "\n\t\t  <div style=\"".concat(css.divCategoryWrapper, "\">\n\t\t\t<div class=\"category ").concat(_category, "\" \n\t\t\t     style=\"").concat(css.divCategory, "\"\n\t\t\t\t ownerfile=\"").concat(fileobj.filename, "\"\n\t\t\t>\n\t\t\t  ").concat(variables.map(function (variableobj) {
           return obj.draggablebutton(variableobj);
         }).join(""), "\n\t\t\t  \n\t\t\t  ").concat(template.ghostbutton(["ghost-endstop"]), "\n\t\t\t</div>\n\t\t  </div>\n\t\t");
       } // category
@@ -9622,7 +9619,7 @@
         var obj = this;
         var fractionunique = variableobj.nunique == variableobj.n ? "" : ",  ".concat(variableobj.nunique, " / ").concat(variableobj.n);
         var label = "".concat(variableobj.name, " (").concat(variableobj.type + fractionunique, ")");
-        var cssstyle = css$2.btnPill + css$2.btnDraggable + "background-color: ".concat(obj.color(variableobj.category), ";");
+        var cssstyle = css.btnPill + css.btnDraggable + "background-color: ".concat(obj.color(variableobj.category), ";");
         var cssclasses = variableobj.supportedCategories.concat("draggable").join(" ");
         return template.button(label, cssstyle, cssclasses, variableobj.name);
       } // draggableButton
@@ -9631,7 +9628,7 @@
       key: "legendbutton",
       value: function legendbutton(category) {
         var obj = this;
-        var cssstyle = css$2.btnPill + css$2.btnLegend + "background-color: ".concat(obj.color(category), ";");
+        var cssstyle = css.btnPill + css.btnLegend + "background-color: ".concat(obj.color(category), ";");
         return template.button(category, cssstyle, "draggable");
       } // draggableButton
 
@@ -9643,7 +9640,7 @@
     }, {
       key: "ghostbutton",
       value: function ghostbutton(classnames) {
-        var cssstyle = css$2.btnPill + css$2.btnGhost;
+        var cssstyle = css.btnPill + css.btnGhost;
         var cssclass = classnames ? "ghost ".concat(classnames.join(" ")) : "ghost";
         return template.button("ghost", cssstyle, cssclass);
       } // ghostButton
@@ -9927,9 +9924,9 @@
   // The coordination of merging.
 
 
-  var metadatamerger = /*#__PURE__*/function () {
-    function metadatamerger(files) {
-      _classCallCheck(this, metadatamerger);
+  var metadatamergingui = /*#__PURE__*/function () {
+    function metadatamergingui(files) {
+      _classCallCheck(this, metadatamergingui);
 
       var obj = this; // It will need to keep track of the files. These will already be metadata files.
 
@@ -9954,7 +9951,7 @@
     } // constructor
 
 
-    _createClass$1(metadatamerger, [{
+    _createClass$1(metadatamergingui, [{
       key: "categories",
       get: function get() {
         var obj = this;
@@ -10150,23 +10147,8 @@
 
     }]);
 
-    return metadatamerger;
+    return metadatamergingui;
   }(); // metadatamerger
-
-  /*
-  The error report requires very little interaction with the data - it only needs to read the reports.
-
-  Maybe consider making a 'fullscreenmenu template', which would hold the basics?
-
-  */
-  // Declare the necessary css here.
-
-  var css$1 = {
-    btn: "\n\t  border: none;\n\t  border-radius: 12px;\n\t  text-align: center;\n\t  text-decoration: none;\n\t  display: inline-block;\n\t  font-size: 20px;\n\t  margin: 4px 2px;\n\t  cursor: pointer;\n  ",
-    btnSubmit: "\n\tbackground-color: mediumSeaGreen; \n\tcolor: white;\n  ",
-    card: "\n\t  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);\n\t  transition: 0.3s;\n\t  border-radius: 5px;\n\t  background-color: gainsboro;\n\t  width: 80%;\n\t  max-height: 90%;\n\t  margin-left: auto;\n\t  margin-right: auto;\n\t  padding: 4px;\n  "
-  }; // css
-  // The html constructor
 
   function html2element$1(html) {
     var template = document.createElement('template');
@@ -10177,7 +10159,7 @@
 
 
   var template$1 = {
-    body: "\n\t\t<div style=\"".concat(css$1.card, "\">\n\t\t  <div>\n\t\t\t<div>\n\t\t\t  \n\t\t\t  <div>\n\t\t\t\t<h2 style=\"display: inline;\">Loading errors:</h2>\n\t\t\t  </div>\n\t\t\t  \n\t\t\t</div>\n\t\t  </div>\n\t\t  \n\t\t  \n\t\t  <div class=\"body\" style=\"overflow-y: scroll; overflow-x: auto; height: 400px;\">\n\t\t\t<div></div>\n\t\t  </div>\n\t\t  \n\t\t  \n\t\t  \n\t\t  <div>\n\t\t\t<button class=\"submit\" style=\"").concat(css$1.btn + css$1.btnSubmit, "\">Understood</button>\n\t\t  </div>\n\t\t  \n\t\t</div>\n\t"),
+    body: "\n\t\t<div style=\"".concat(css.card, "\">\n\t\t  <div>\n\t\t\t<div>\n\t\t\t  \n\t\t\t  <div>\n\t\t\t\t<h2 style=\"display: inline;\">Loading errors:</h2>\n\t\t\t  </div>\n\t\t\t  \n\t\t\t</div>\n\t\t  </div>\n\t\t  \n\t\t  \n\t\t  <div class=\"body\" style=\"overflow-y: scroll; overflow-x: auto; height: 400px;\">\n\t\t\t<div></div>\n\t\t  </div>\n\t\t  \n\t\t  \n\t\t  \n\t\t  <div>\n\t\t\t<button class=\"submit\" style=\"").concat(css.btn + css.btnSubmit, "\">Understood</button>\n\t\t  </div>\n\t\t  \n\t\t</div>\n\t"),
     content: function content(errors) {
       return "<div style=\"padding-left: 20px;\">\n\t\t\t".concat(errors.map(template$1.erroritem).join(" "), "\n\t\t</div>");
     },
@@ -10237,13 +10219,6 @@
     return errorreport;
   }(); // metadatamerger
 
-  var css = {
-    btn: "\n\tborder: none;\n\tborder-radius: 12px;\n\ttext-align: center;\n\ttext-decoration: none;\n\tdisplay: inline-block;\n\tfont-size: 20px;\n\tmargin: 4px 2px;\n\tcursor: pointer;\n  ",
-    fullscreenContainer: "\n\tposition: fixed;\n\ttop: 0;\n\tbottom: 0;\n\tleft: 0;\n\tright: 0;\n\tbackground: rgba(90, 90, 90, 0.5);\n  ",
-    card: "\n\tbox-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);\n\ttransition: 0.3s;\n\tborder-radius: 5px;\n\tbackground-color: gainsboro;\n\twidth: 80%;\n\tmax-height: 90%;\n\tmargin-left: auto;\n\tmargin-right: auto;\n\tpadding: 4px;\n  ",
-    cardTitle: "\n\twidth: 80%;\n\tmargin-left: auto;\n\tmargin-right: auto;\n\tmargin-top: 40px;\n  "
-  }; // css
-
   var template = "\n<div style=\"".concat(css.fullscreenContainer, "\">\n  \n  <div style=\"").concat(css.cardTitle, "\">\n\t<button class=\"showerrorreport\" style=\"").concat(css.btn + "float: right;", "\">\n\t  <i class=\"fa fa-exclamation-triangle\"></i>\n\t</button>\n  </div>\n  \n  <div class=\"menu-body\">\n  </div>\n  \n</div>\n");
 
   function html2element(html) {
@@ -10267,7 +10242,7 @@
       obj.node = html2element(template);
       obj.container = obj.node.querySelector("div.menu-body"); // Make the modules that need access to the DOM.
 
-      obj.merger = new metadatamerger([]); // But control hte button functionality from outside? Otherwise it's tricky to control the menu behavior.
+      obj.merger = new metadatamergingui([]); // But control hte button functionality from outside? Otherwise it's tricky to control the menu behavior.
 
       obj.merger.node.querySelector("button.submit").addEventListener("click", function () {
         obj.submit();
@@ -10381,10 +10356,11 @@
   }(); // metadatamanager
 
   // Entry point for the bundling. Build up the session here. Then index.html just runs the bundled javascript file.
+
   var fullscreenMenusContainer = document.getElementById("fullscreen-menu-container"); // For the file library now set some required extent, and then ask for some of the files.
 
   var library = new dbslicefilelibrary();
-  console.log(library); // Dragging and dropping
+  console.log(library); // Dragging and dropping - there is a background element in index.html that is intended to allow files to be dropped anywhere.
 
   var target = document.getElementById("dragAndDrop");
 
@@ -10394,43 +10370,23 @@
 
   target.ondragover = function (ev) {
     library.ondragover(ev);
-  };
-  /*
+  }; // Make the metadata menu. Make the menu support drag and drop. Add an event to a button in index.html to open the menu.
 
-  // HERE IM ASSUMING ALL THE FILES IN THE LIBRARY ARE METADATA FILES!
-  // Maybe this should be wrapped in hte metadataManager anyway. It's all in hte pipeline.
-  let mergerer = new metadatamerger(library.files);
+
+  var mergerer = new metadatamenu(library.files);
   fullscreenMenusContainer.appendChild(mergerer.node);
-  document.getElementById("merging-show").addEventListener("click", ()=>{mergerer.show()} );
 
+  mergerer.node.ondrop = function (ev) {
+    library.ondrop(ev);
+  };
 
-  // Fake errors with only the relevant attributes:
-  let errorfiles = [
-    {
-      filename: "_fileManager.js",
-      requester: "User",
-      errors: [
-          {message: "LoaderError: Unsupported Extension"}
-      ]
-    },
-    
-    {
-      filename: "_fake file.js",
-      requester: "drag & drop",
-      errors: [
-          {message: "LoaderError: Unsupported content format"}
-      ]
-    }
-  ];
-  let errorreporter = new errorreport(errorfiles);
-  fullscreenMenusContainer.appendChild(errorreporter.node);
+  mergerer.node.ondragover = function (ev) {
+    library.ondragover(ev);
+  };
 
-  */
-
-
-  var M = new metadatamenu(library.files);
-  fullscreenMenusContainer.appendChild(M.node);
-  console.log(M);
+  document.getElementById("merging-show").addEventListener("click", function () {
+    mergerer.showmerging();
+  }); // Make a fi
 
 }());
 //# sourceMappingURL=dbslice.js.map

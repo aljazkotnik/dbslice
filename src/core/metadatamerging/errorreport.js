@@ -2,45 +2,9 @@
 
 
 
-/*
-The error report requires very little interaction with the data - it only needs to read the reports.
-
-Maybe consider making a 'fullscreenmenu template', which would hold the basics?
-
-*/
+import {css} from "./mergingcss.js";
 
 
-// Declare the necessary css here.
-let css = {
-	
-  btn: `
-	  border: none;
-	  border-radius: 12px;
-	  text-align: center;
-	  text-decoration: none;
-	  display: inline-block;
-	  font-size: 20px;
-	  margin: 4px 2px;
-	  cursor: pointer;
-  `,
-  
-  btnSubmit: `
-	background-color: mediumSeaGreen; 
-	color: white;
-  `,
-  
-  card: `
-	  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	  transition: 0.3s;
-	  border-radius: 5px;
-	  background-color: gainsboro;
-	  width: 80%;
-	  max-height: 90%;
-	  margin-left: auto;
-	  margin-right: auto;
-	  padding: 4px;
-  `
-} // css
 
 
 

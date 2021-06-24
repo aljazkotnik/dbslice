@@ -2,7 +2,7 @@
 // `metadatamenu' controls the merging menu and the error report. These are merged together to save space in hte main view. The output of the `metadatamenu' is the merging information.
 
 // We want the metadata to update every time new metadataFiles are added. This manager knows what kind of files to expect, therefore the access to the library is passed in, and when it sees that the metadata files have been changed it updates itself.
-import metadataFile from "./supportedfiles/metadataFile.js"
+import metadataFile from "../supportedfiles/metadataFile.js"
 
 // Reacitvity components
 import {makeObservable, observable, computed, autorun, action} from "mobx";
@@ -10,58 +10,12 @@ import {makeObservable, observable, computed, autorun, action} from "mobx";
 
 
 // External module to handle the filtering.
-import metadatamerger from "./metadatamerger.js";
+import metadatamergingui from "./metadatamergingui.js";
 import errorreport from "./errorreport.js";
 
 
-
-
-
-
-
-let css = {
-	
-  btn: `
-	border: none;
-	border-radius: 12px;
-	text-align: center;
-	text-decoration: none;
-	display: inline-block;
-	font-size: 20px;
-	margin: 4px 2px;
-	cursor: pointer;
-  `,
-	
-  fullscreenContainer: `
-	position: fixed;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	background: rgba(90, 90, 90, 0.5);
-  `,
-  
-  card: `
-	box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-	transition: 0.3s;
-	border-radius: 5px;
-	background-color: gainsboro;
-	width: 80%;
-	max-height: 90%;
-	margin-left: auto;
-	margin-right: auto;
-	padding: 4px;
-  `,
-  
-  cardTitle: `
-	width: 80%;
-	margin-left: auto;
-	margin-right: auto;
-	margin-top: 40px;
-  `
-} // css
-
-
+// Import the css.
+import {css} from "./mergingcss.js"
 
 
 
@@ -107,16 +61,13 @@ export default class metadatamenu {
 		let obj = this;
 		obj.files = files;
 		
-		
-		
-		
 		// make the node that can be appended to the DOM.
 		obj.node = html2element(template);
 		obj.container = obj.node.querySelector("div.menu-body");
 		
 		
 		// Make the modules that need access to the DOM.
-		obj.merger = new metadatamerger([]);
+		obj.merger = new metadatamergingui([]);
 		
 		
 		// But control hte button functionality from outside? Otherwise it's tricky to control the menu behavior.
