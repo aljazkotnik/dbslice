@@ -44,6 +44,8 @@ var supportedVariableTypes = {
 			let testobj = this;
 			variable.category = "categorical";
 			variable.type = "string";
+			
+			variable.supportedTypes = ["string"];
 			variable.supportedCategories = testobj.supportedCategories["string"];
 			return variable
 		}, // defaultclassification
@@ -68,9 +70,13 @@ var supportedVariableTypes = {
 				// It's possible that hte file was found and loaded correctly. In that case 'obj.content.format' will contain the name of the file type. Otherwise this field will not be accessible.
 				try {
 					// Category is the categorisation that will actually be used, and type cannot be changed.
-					variable.category = fileobj[0].content.format
-					variable.type = fileobj[0].content.format
-					variable.supportedCategories = testobj.supportedCategories[variable.type];
+					let fileformat = fileobj[0].content.format;
+					
+					variable.category = fileformat;
+					variable.type = fileformat;
+					
+					variable.supportedTypes = ["string", fileformat];
+					variable.supportedCategories = testobj.supportedCategories[variable.category];
 					return variable
 					
 				} catch {
@@ -94,6 +100,8 @@ var supportedVariableTypes = {
 			if(testdate){				
 				variable.category = "ordinal";
 				variable.type = "datetime";
+				
+				variable.supportedTypes = ["number", "datetime"];
 				variable.supportedCategories = testobj.supportedCategories["datetime"];
 			} else {
 				testobj.defaultclassification(variable);
@@ -189,8 +197,9 @@ var supportedVariableTypes = {
 	number: {
 		
 		test: function(variable){
-			variable.category = "ordinal"
-			variable.type = "number"
+			variable.category = "ordinal";
+			variable.type = "number";
+			variable.supportedTypes = ["number"]
 			variable.supportedCategories = ["ordinal", "categorical"]
 			return variable
 		} // test
@@ -301,7 +310,7 @@ export default class metadataFile extends dbsliceFile {
 				
 				// If any variables have been identified as datetypes, then convert them all to datetypes here to save the hassle for later.
 				obj.content.variables.forEach(variable=>{
-					if(variable.type == "datetime"){
+					if(variable.supportedTypes.includes("datetime")){
 						obj.content.data.forEach(row=>{
 							row[variable.name] = supportedVariableTypes.string.string2datetime( row[variable.name] );
 						}) // forEach
@@ -330,6 +339,8 @@ export default class metadataFile extends dbsliceFile {
 			// For any variables without dedicated support.
 			variable.category = "unused";
 			variable.type = undefined;
+			
+			variable.supportedTypes = [];
 			variable.supportedCategories = [];
 			return variable
 		} // if

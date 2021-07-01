@@ -1,7 +1,9 @@
+import {makeObservable, computed} from "mobx";
+
 import { unique } from "../helpers.js";
 
 // Superclass
-import filelibrary from "./filelibrary.js";
+import fileLibrary from "./fileLibrary.js";
 
 // File types that the library focuses on handling. `metadataFile' is needed so that an array containing all metadata files can be a mobx `computed' variable. `userFile' is needed to handle drag & drop events.
 import userFile from "../supportedfiles/userFile.js";
@@ -10,10 +12,21 @@ import metadataFile from "../supportedfiles/metadataFile.js";
 
 // Extend that library here so that it can also handle the drag-dropped events.
 
-export default class dbslicefilelibrary extends filelibrary {
+export default class dbsliceFileLibrary extends fileLibrary {
 	constructor(){
 		super()
+		let obj = this;
+		
+		makeObservable(obj, {
+			metadatafiles: computed
+		})
 	} // constructor
+	
+	// Is it because the reference to the computation is not the same as invoking the computation on hte prototype object?
+	get metadatafiles(){
+		let obj = this;
+		return obj.retrieveByClass(metadataFile);
+	} // metadatafiles
 	
 	
 	updateactive(filenames){
@@ -21,7 +34,7 @@ export default class dbslicefilelibrary extends filelibrary {
 		
 		// Always keep the metadata files available.
 		
-		let allMetadataFilenames = obj.retrieveByClass(metadataFile).map(fileobj=>fileobj.filename);
+		let allMetadataFilenames = obj.metadatafiles.map(fileobj=>fileobj.filename);
 		
 		obj.required = allMetadataFilenames.concat( unique(filenames) );
 		
@@ -32,13 +45,13 @@ export default class dbslicefilelibrary extends filelibrary {
 		// Several files may have been dragged and dropped, and they may be of several types (metadata, session).
 		let obj = this;		
 		
-		files.forEach(file=>{
-			obj.single(userFile, file, "drag & drop")
+		let promises = files.map(file=>{
+			return obj.single(userFile, file, "drag & drop");
 		}) // forEach
 		
+		return promises
+		
 	} // dragdropped
-	
-	
 	
 	ondrop(ev){
 		let obj = this;
@@ -72,4 +85,4 @@ export default class dbslicefilelibrary extends filelibrary {
 		ev.preventDefault();
 	} // ondragover
 	
-} // dbslicefilelibrary
+} // dbsliceFileLibrary

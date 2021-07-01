@@ -1,4 +1,4 @@
-h1, h2, h3, h4, p, a, b, li, ol, button {
+h1, h2, h3, h4, p, a, b, li, ol, button, tspan, text {
 	font-family: 'Roboto Condensed', sans-serif;
 }
 
@@ -16,4 +16,20 @@ button.btn-small {
 	border: none;
 	border-radius: 5px;
 	cursor: pointer;
+}
+
+
+
+.unselectable {
+  -webkit-user-select:none;
+  -khtml-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  -o-user-select:none;
+  user-select:none;
+}
+
+
+text.hover-highlight:hover {
+	font-size: 15px;
 }

@@ -8,7 +8,7 @@ import {makeObservable, observable, autorun, action} from "mobx";
 
 // On-demand plots provide the file manager with the type of file they are requesting. Maybe the session should be treated as a plot? So it prescribes the type of file it would like to have, and then that is passed to the file manager, which just loads and stores it? So filemanager would be a filelibrary?
 
-export default class filelibrary {
+export default class fileLibrary {
 	constructor(){
 		let obj = this;
 		
@@ -147,7 +147,7 @@ export default class filelibrary {
 	
 
 	// REMOVAL
-	#removeByFilenames(filenames){
+	removeByFilenames(filenames){
 		// `filenames' is an array of string file names.
 		let obj = this;
 		obj.#remove( obj.retrieveByFilenames(filenames) );
@@ -169,5 +169,5 @@ export default class filelibrary {
 		})
 	} // removeFiles
 		
-} // filelibrary
+} // fileLibrary
 	

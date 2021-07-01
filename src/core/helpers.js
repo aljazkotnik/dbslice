@@ -1,4 +1,14 @@
 
+
+export function html2element(html){
+	let template = document.createElement('template'); 
+	template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
+	return template.content.firstChild;
+} // html2element
+
+
+
+
 		
 export function isIterable(object) {
   // https://stackoverflow.com/questions/18884249/checking-whether-something-is-iterable
@@ -90,10 +100,7 @@ export function setDifference(A, B){
 
 
 
-// DOESN'T BELOG HERE!!
-export function makeTranslate(x,y){
-	return "translate(" + x + "," + y + ")"
-} // makeTranslate
+
 
 
 // Text sizing
@@ -130,20 +137,7 @@ export function calculateExponent(val){
 } // calculateExponent
 
 
-// FILES
-export function createFileInputElement(loadFunction){
-	
-	// This button is already created. Just add the functionaity.
-	var dataInput = document.createElement('input');
-	dataInput.type = 'file';
 
-	dataInput.onchange = function(e){
-		loadFunction(e.target.files)
-	}; // onchange
-	
-  return dataInput
-	
-} // createFileInputElement
 		   
 			
 

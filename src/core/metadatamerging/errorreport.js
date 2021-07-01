@@ -1,19 +1,10 @@
 // import {makeObservable, observable, autorun, action, computed} from "mobx";
 
 
-
+import {html2element} from "../helpers.js";
 import {css} from "./mergingcss.js";
 
 
-
-
-
-// The html constructor
-function html2element(html){
-	let template = document.createElement('template'); 
-	template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
-	return template.content.firstChild;
-} // html2element
 
 var template = {
 	body: `
@@ -75,16 +66,7 @@ export default class errorreport {
 		
 		
 		obj.update()
-		/*
-		// Erros should be observable, and the menu should update itself automatically.
-		makeObservable({
-			errors: observable
-		})
 		
-		autorun(()=>{
-			obj.update();
-		})
-		*/
 		
 	} // constructor
 	

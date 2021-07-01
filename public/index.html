@@ -30,14 +30,14 @@
   <div id="dragAndDrop" style="position: fixed; top: 0px; left: 0px; height: 100%; width: 100%; z-index: -1;"></div>
 
 
-  <div id="header">
-    <h1>App</h1>
-    <button id="session" class="btn-small">Session</button>
+  <div id="header" class="unselectable">
+    <h1 contenteditable="true">App</h1>
 	<button id="merging-show" class="btn-small">Metadata</button>
+	<button id="add-plot" class="btn-small">+</button>
   </div>
   
-  <div>
-	<div id="tabletop" style="position: absolute;"></div>
+  <div class="unselectable">
+	<div id="plot-container" style="position: absolute;"></div>
 	<div id="navigationtree" style="position: absolute;"></div>
 	<div id="tooltip"></div>
   </div>

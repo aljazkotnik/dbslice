@@ -1,4 +1,4 @@
-import {unique} from "../helpers.js";
+import {unique, html2element} from "../helpers.js";
 import dragnode from "../dragnode.js";
 import metadataFile from "../supportedfiles/metadataFile.js";
 import {makeObservable, observable, autorun, action, computed} from "mobx";
@@ -39,7 +39,7 @@ class template{
 		obj.categories = unique( categories.concat("unused") );
 
 	
-		obj.node = template.html2element(obj.backbone())
+		obj.node = html2element(obj.backbone())
 		obj.update()
 	} // constructor
 	
@@ -51,12 +51,12 @@ class template{
 		// Update the legend on top.
 		let legend = obj.node.querySelector("div.legend");
 		legend.lastChild.remove();
-		legend.appendChild( template.html2element( obj.legend() ) );
+		legend.appendChild( html2element( obj.legend() ) );
 		
 		// Update the interactive body
 		let body = obj.node.querySelector("div.body");
 		body.lastChild.remove();
-		body.appendChild( template.html2element( obj.interactivecontent() ) );
+		body.appendChild( html2element( obj.interactivecontent() ) );
 		
 		// Control the heights.
 		template.coordinateFileDivs(obj.node);
@@ -131,11 +131,20 @@ class template{
 	filecolumn(fileobj){
 		let obj = this;
 		
+		/*
+		<button class="remove-file" filename="${ fileobj.filename }" style="${ css.btn + css.btnDanger }">
+				<i class="fa fa-times"></i>
+		</button>
+		*/
+		
 		return `
 		  <div class="file" style="${ css.divFileColumn }">
-			<p style="text-align: center;">
-			  <strong>${ fileobj.filename }</strong>
-			</p>
+			
+			<div>
+			  <p style="display: inline-block;">
+			    <strong>${ fileobj.filename }</strong>
+			  </p>
+		    </div>
 		  
 			${ obj.categories.map(category=>obj.category(fileobj, category)).join("") }
 		  
@@ -204,15 +213,6 @@ class template{
 	} // ghostButton
 	
 	
-	static html2element(html){
-		let template = document.createElement('template'); 
-		template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
-		return template.content.firstChild;
-	} // html2element
-	
-	
-	
-	
 	// Coordinate category container heights.
 	
 	
@@ -274,7 +274,7 @@ class template{
 				let k = n - category.children.length;
 				let endstop = category.querySelector("button.ghost-endstop")
 				for(let i=0; i<k; i++){
-					category.insertBefore(template.html2element(template.ghostbutton()), endstop)
+					category.insertBefore( html2element(template.ghostbutton()), endstop)
 				} // for
 			}) // forEach
 			
@@ -305,8 +305,6 @@ class variabledrag extends dragnode{
 		
 		// The color cheme is needed to allow the button to change color when it is assigned to a new category.
 		obj.color = color;
-		
-		obj.apply();
 		
 	} // constructor
 	
@@ -430,7 +428,7 @@ class variabledrag extends dragnode{
 		
 		function move(a,container,b){
 			// Append a ghost node to the origin.
-			let originghost = template.html2element(template.ghostbutton());
+			let originghost = html2element(template.ghostbutton());
 			a.parentElement.insertBefore(originghost, a);
 			
 			// Append to ghost position.
@@ -505,7 +503,7 @@ export default class metadatamergingui {
 		
 		
 		// Apply the submit functionality.
-		obj.node.querySelector("button.submit").addEventListener("click", ()=>obj.submit())
+		// obj.node.querySelector("button.submit").addEventListener("click", ()=>obj.submit())
 		
 		
 		
@@ -548,6 +546,7 @@ export default class metadatamergingui {
 		
 		obj.builder.update();
 		
+		
 		// Apply the draggable functionality. This should really be applied on a file by file basis.
 		let body = obj.builder.node.querySelector("div.body");
 		let filedivs = obj.builder.node.querySelectorAll("div.file");
@@ -577,6 +576,8 @@ export default class metadatamergingui {
 	
 	collectmerginginfo(){
 		// Collect the merging info by looping over the identified categories and comparing the elements in the same position.
+		
+		// The merging data is in an array to allow for simpler arranging of the file variable entries in `sortByLoadedMergingInfo`.
 		let obj = this;
 		
 		// MAYBE IT SHOULDNT BE A MAP
@@ -600,7 +601,7 @@ export default class metadatamergingui {
 				// If the merging was valid, then attach it to the info object.
 				if( comparableVariables ){
 					// This now needs to store the file name, variable name, and the variable merged alias.
-					let variableAlias = comparableVariables[0].name;
+					let variableAlias = comparableVariables[0].variable;
 					
 					comparableVariables.forEach(variableobj=>{
 						variableobj.category = category;
@@ -642,11 +643,12 @@ export default class metadatamergingui {
 		  } else {
 			comparablevariables.push( {
 			  filename: categorynode.attributes.ownerfile.value,
-				  name: variablenode.attributes.variable.value
+			  variable: variablenode.attributes.variable.value
 			} );	
 		  } // if
 		  
 		} // for
+		
 		
 		return comparablevariables;
 	} // collectComparableVariableRow
@@ -695,7 +697,7 @@ export default class metadatamergingui {
 			
 			// Loop over the variables and have those that are not declared moved to unused.
 			fileobj.content.variables.forEach(variableobj=>{
-				let declared = declaredVariables.filter(declaredobj=>declaredobj.name == variableobj.name);
+				let declared = declaredVariables.filter(declaredobj=>declaredobj.variable == variableobj.name);
 				if( declared.length != 1 ){
 					// Undeclared variables are considered unused.
 					variableobj.category = "unused";

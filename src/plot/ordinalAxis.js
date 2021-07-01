@@ -1,21 +1,8 @@
-import * as d3$1 from 'd3';
-import { makeObservable, observable, action, computed, autorun } from 'mobx';
 
-function html2element(html){
-	let template = document.createElement('template'); 
-	template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
-	return template.content.firstChild;
-} // html2element
+import * as d3 from "d3";
+import {html2element, calculateExponent} from "../core/helpers.js";
 
-function calculateExponent(val){
-	// calculate the exponent for the scientific notation.
-	var exp = 0;
-	while( Math.floor( val / 10**(exp+1) ) > 0 ){ exp+=1; }
-	
-	// Convert the exponent to multiple of three
-	return Math.floor( exp / 3 )*3
-
-} // calculateExponent
+import {makeObservable, observable, computed, autorun, action} from "mobx";
 
 /* I want to support:
  - linear		: scaleLinear
@@ -32,7 +19,7 @@ scales
 let textattributes = `fill="black" font-size="10px" font-weight="bold"`;
 
 // text -> x="-8" / y="-0.32em"
-let template$1 = `
+let template = `
 	<g class="graphic"></g>
 	<g class="exponent">
 		<text ${textattributes}>
@@ -59,7 +46,7 @@ let template$1 = `
 
 
 
-class ordinalAxis{
+export default class ordinalAxis{
 	
 	type = "linear";
 	supportedtypes = ["log", "linear"];
@@ -82,15 +69,15 @@ class ordinalAxis{
 		// The vertical position of the axis doesn't actually depend on the range. The y-position for the x axis should be communicated from outside. The axis should always get the x and y dimesnion of the svg we're placing it on.
 		
 		
-		obj.d3node = d3$1.create("svg:g")
+		obj.d3node = d3.create("svg:g")
 		  .attr("class", "axis")
-		  .html(template$1);
+		  .html(template);
 		  
 		
 		// Add the functionality to the domain change.
 		let controls = obj.d3node.select("g.controls");
-		controls.select("text.plus").on("click", ()=>{obj.plusdomain();});
-		controls.select("text.minus").on("click", ()=>{obj.minusdomain();});  
+		controls.select("text.plus").on("click", ()=>{obj.plusdomain()})
+		controls.select("text.minus").on("click", ()=>{obj.minusdomain()})  
 		
 		
 		makeObservable(obj, {
@@ -103,11 +90,11 @@ class ordinalAxis{
 			range: computed,
 			scale: computed,
 			exponent: computed
-		});
+		})
 		
 		
-		autorun(()=>{obj.position();});
-		autorun(()=>{obj.draw();});
+		autorun(()=>{obj.position()})
+		autorun(()=>{obj.draw()})
 		
 		
 	} // constructor
@@ -145,11 +132,11 @@ class ordinalAxis{
 		let dyMinus = obj.axis == "y" ? 0 : 5;
 		let dxMinus = obj.axis == "y" ? 5 : 1.5;
 			
-		controls.select("text.plus").attr("dy", dyPlus);
-		controls.select("text.plus").attr("dx", dxPlus);
+		controls.select("text.plus").attr("dy", dyPlus)
+		controls.select("text.plus").attr("dx", dxPlus)
 		
-		controls.select("text.minus").attr("dy", dyMinus);
-		controls.select("text.minus").attr("dx", dxMinus);
+		controls.select("text.minus").attr("dy", dyMinus)
+		controls.select("text.minus").attr("dx", dxMinus)
 		
 	} // position
 	
@@ -214,19 +201,19 @@ class ordinalAxis{
 		// Computed value based on hte selected scale type.
 		let obj = this;
 		
-		let scale;
+		let scale
 		switch(obj.type){
 			case "log":
-				scale = d3$1.scaleLog();
+				scale = d3.scaleLog();
 				break;
 			case "linear":
 			default:
-				scale = d3$1.scaleLinear();
+				scale = d3.scaleLinear();
 				break;
 			
 		} // switch
 		
-		scale.range(obj.range).domain(obj.domain);
+		scale.range(obj.range).domain(obj.domain)
 		
 		return scale
 		
@@ -252,11 +239,11 @@ class ordinalAxis{
 			.select("text")
 			  .attr("fill", obj.exponent > 0 ? "black" : "none")
 			.select("tspan.exp")
-			  .html(obj.exponent);
+			  .html(obj.exponent)
 			  
-		let d3axis = obj.axis == "y" ? d3$1.axisLeft : d3$1.axisBottom;
+		let d3axis = obj.axis == "y" ? d3.axisLeft : d3.axisBottom;
 		obj.d3node.select("g.graphic")
-		  .call( d3axis( obj.scale ) );
+		  .call( d3axis( obj.scale ) )
 		
 	} // draw
 	
@@ -272,7 +259,7 @@ class ordinalAxis{
 		obj.d3node
 		   .selectAll(".tick")
 		   .selectAll("text")
-			 .style("cursor", "ew-resize");
+			 .style("cursor", "ew-resize")
 		     
 		// Resolve the tick texts getting bold through CSS!!
 		
@@ -280,217 +267,3 @@ class ordinalAxis{
 	
 
 } // axis
-
-/*
-A multipurpose scatterplot inset. This will be a first step towards developing separate `twoplotaxis' inset, and a redering inset that will actually draw.
-
-
-
-This one should define all the user interactions it needs. So it needs to know the variables.
-
-Children (scaterplot, line) should have lasso selection. In the case of the line the data comes from the loaded files, and not from hte metadata. So the plot containing them should update them.
-*/
-
-
-
-/*
-background: elements for background functionality (e.g. zoom rectangle)
-data      : primary data representations
-markup    : non-primary data graphic markups, (e.g. compressor map chics) 
-x/y-axis  : x/y axis elements
-exponent  : power exponent (big number labels may overlap otherwise)
-*/
-let template = `
-	<svg class="plot-area">
-		
-		<g class="background">
-			<clipPath>
-				<rect></rect>
-			</clipPath>
-			
-			<rect class="zoom-area" fill="rgb(255, 25, 255)"></rect>
-			
-			<g class="tooltip-anchor">
-				<circle class="anchor-point" r="1" opacity="0"></circle>
-			</g>
-		</g>
-		
-		<g class="data"></g>
-		<g class="markup"></g>
-		
-		
-	</svg>
-`;
-
-
-// The axis scale needs to have access to the data and to the svg dimensions.
-
-
-// Start thinking about integrating this one within dbsliceOrdinalPlot.
-
-
-
-
-class twoInteractiveAxesInset{
-	
-	// Generally I'll need variables to select from, and data that needs to be plotted.
-	variables = []
-	data = []
-	
-	
-	/* For each axis I'll need:
-		The name of the selected variable
-		The scale to operate with
-	*/ 
-	
-	
-	
-	
-	width = 400
-	height = 400
-	
-	
-	
-	constructor(){
-		// What should this one get?
-		
-		
-		let obj = this;
-		
-		
-		obj.node = html2element(template);
-		
-		
-		// `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
-		obj.y = new ordinalAxis("y", obj.plotbox, [0, 1]);
-		obj.x = new ordinalAxis("x", obj.plotbox, [0, 1]);
-		
-		
-		obj.node.appendChild(obj.y.d3node.node());
-		obj.node.appendChild(obj.x.d3node.node());
-		
-		
-		
-		// Make it run automatically when new data becomes available.
-		makeObservable(obj, {
-			data: observable,
-			adddata: action
-		});
-		
-		
-		autorun(()=>{ obj.draw(); });
-		
-	} // constructor
-	
-	
-	update(){
-		let obj = this;
-		
-		// Scale the svg.
-		obj.node.style.height = obj.height;
-		obj.node.style.width = obj.width;
-		
-		// Update the axes.
-		obj.y.setplotbox( obj.plotbox );
-		obj.x.setplotbox( obj.plotbox );
-		
-		
-	} // update
-	
-	
-	
-	
-	draw(){
-		// Draw all the tasks onto the plot.
-		let obj = this;
-		
-		d3$1.select(obj.node)
-		  .select("g.data")
-		  .selectAll("circle")
-		  .data( obj.data )
-		  .join(
-			enter => enter.append("circle")
-			  .attr("r", 5)
-			  .attr("fill", "cornflowerblue")
-			  .attr("cx", d=>obj.x.scale( d.sepal_length ))
-			  .attr("cy", d=>obj.y.scale( d.sepal_width )),
-			update => update
-			  .attr("cx", d=>obj.x.scale( d.sepal_length ))
-			  .attr("cy", d=>obj.y.scale( d.sepal_width )),
-			exit => exit.remove()
-		  );
-		
-	} // draw
-	
-	
-	
-	get plotbox(){
-		// Specify the area of the svg dedicated to the plot. In this case it'll be all of it. The margin determines the amount of whitespace around the plot. This whitespace will NOT include the axis labels etc.
-		let obj = this;
-		let margin = {top: 0, right: 0, bottom: 0, left: 0};
-		let svgrect = obj.node.getBoundingClientRect();
-		let plot = {
-			x: [margin.left, svgrect.width - margin.left - margin.right], 
-			y: [margin.top , svgrect.height- margin.top  - margin.bottom]
-		};
-		return plot
-		
-	} // plotbox
-	
-	// Shouldn't this be moved to the plot??
-	adddata(content){
-		// When new data is given to the plots they should update.
-		this.data = content.data;
-		this.variables = content.variables;
-		
-		// Pick an x and y variable.
-		this.xvariable = content.variables[0];
-		this.yvariable = content.variables[1];
-		
-		this.x.setdomain(d3$1.extent(content.data, d=>d.sepal_length));
-		this.y.setdomain(d3$1.extent(content.data, d=>d.sepal_width));
-	}
-	
-	
-} // twoInteractiveAxesInset
-
-// Entry point for the bundling. Build up the session here. Then index.html just runs the bundled javascript file.
-
-
-
-// d3.csv reads everything as strings, and this function can convert all number strings to numbers.
-function convertNumbers(array){
-	return array.map(function(row){
-			
-		var r = {};
-		for (var k in row) {
-			r[k] = +row[k];
-			if (isNaN(r[k])) {
-				r[k] = row[k];
-			} // if
-		} // for
-	  return r;
-	})
-} // convertNumbers
-
-
-
-let plotContainer = document.getElementById("plot-container");
-
-// Make an inset, and attach it to a plot.
-let plot = new twoInteractiveAxesInset();
-plotContainer.appendChild(plot.node);
-plot.update();
-console.log(plot);
-
-// Work on just developing the twoaxis inset here.
-d3.csv("./_data/iris_data.csv")
-  .then(content=>{ return {
-	  data: convertNumbers(content),
-	  variables: content.columns
-    }
-  })
-  .then(content=>{ 
-	
-	plot.adddata(content);
-});

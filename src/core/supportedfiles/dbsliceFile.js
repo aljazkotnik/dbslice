@@ -1,5 +1,12 @@
+// import {text as d3text, csv as d3csv, json as d3json, csvParse as d3csvParse} from "d3-dsv";
 
-
+import {text, csv, json, csvParse} from "d3";
+let d3 = {
+	text: text,
+	csv: csv,
+	json: json,
+	csvParse: csvParse
+};
 
 // Handle the erros within the files, and not within a separate object!!
 

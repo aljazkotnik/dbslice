@@ -1,24 +1,32 @@
-import * as d3 from "d3";
+import {drag} from "d3-drag";
+import {select} from "d3-selection";
 
 // Formulate this as a class? The it can be called as:
 // A = new dragdiv() ...
 
 
 export default class dragnode {
-	constructor(node){
-		// Make a new div.
+	constructor(wrapper, handle){
+		// Allow both a handle and a wrapper nodes to be passed in? The handle is applied the draggable behaviour, and the wrapper has its position updated? If tehre is no wrapper the handle is the wrapper?
 		let obj = this;
 		
+		if(!handle){
+			handle = wrapper;
+		} // if
 		
-		obj.node = node;
-		obj.d3node = d3.select(node);
-		obj.d3node
+		
+		obj.node = wrapper;
+		obj.d3handle = select(handle);
+		obj.d3wrapper = select(wrapper);
+		obj.d3wrapper
 		  .style("position", "relative")
 		  .style("left", 0 + "px")
 		  .style("top", 0 + "px");
 		
 		// Container that will hold the mouse coordinates.
 		obj.mouseorigin = {};
+		
+		obj.apply();
 		
 	} // constructor
 	
@@ -28,7 +36,7 @@ export default class dragnode {
 		let obj = this;
 		
 		// Apply dragging to it. Store the movement data on the dragdiv object instead? So as to not pollute the actual object?
-		let dragobj = d3.drag()
+		let dragobj = drag()
 			.on("start", function(event){
 				obj.mouseorigin = obj.mouseposition(event);
 				
@@ -42,7 +50,7 @@ export default class dragnode {
 				
 				
 				// Move the wrapper.
-				obj.d3node
+				obj.d3wrapper
 				  .style("left", (obj.position.x + movement.x) + "px")
 				  .style("top", (obj.position.y + movement.y) + "px");
 				  
@@ -58,7 +66,7 @@ export default class dragnode {
 				obj.onend();
 			})
 		
-		obj.d3node.call(dragobj);
+		obj.d3handle.call(dragobj);
 		
 	} // apply
 	

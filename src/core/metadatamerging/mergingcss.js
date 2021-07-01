@@ -64,6 +64,11 @@ export let css = {
 	color: white;
   `,
   
+  btnDanger: `
+	background-color: crimson;
+	color: white;
+  `,
+  
   btnLegend: `
 	  display: inline-block;
 	  cursor: default;
