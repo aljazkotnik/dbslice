@@ -33,6 +33,9 @@ let template = `
 		<text class="plus hover-highlight" ${textattributes}>+</text>
 		<text class="minus hover-highlight" ${textattributes}>-</text>
 	</g>
+	<g class="variable-change">
+		<text class="label hover-highlight" ${textattributes}>Variable name</text>
+	</g>
 `;
 
 
@@ -52,7 +55,7 @@ export default class ordinalAxis{
 	supportedtypes = ["log", "linear"];
 	
 	// These margins are required to completely fit the scales along with their labels, ticks and domain lines onto the plot.
-	margin = {top: 30, right: 20, bottom: 40, left: 40}
+	margin = {top: 30, right: 30, bottom: 40, left: 40}
 	
 	constructor(axis, plotbox, initvariable, ordinalvariables){
 		/* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `ordinalvariable' is a dbslice ordinal variable which is paired with this axis. */
@@ -66,7 +69,12 @@ export default class ordinalAxis{
 		obj.variableoptions = ordinalvariables;
 		
 		
-		obj.setdomain(initvariable.extent);
+		// Before setting the initial range extend it by 10% on either side to make sure the data fits neatly inside.
+		let domaindiff = initvariable.extent[1] - initvariable.extent[0];
+		obj.setdomain([
+			initvariable.extent[0] - domaindiff, 
+			initvariable.extent[1] + domaindiff
+		]);
 		
 		// When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
 		
@@ -109,25 +117,22 @@ export default class ordinalAxis{
 		// If the range changes, then the location of the axes must change also. And with them the exponents should change location.
 		let obj = this;
 		
-		// Position the axis.
-		let translate = obj.axis == "y" ? 
-		  `translate(${obj.margin.left}, ${0})` :
-		  `translate(${0}, ${obj.plotbox.y[1] - obj.margin.bottom})`;
-		obj.d3node.attr("transform", translate );
+		// Position the axis. This will impact all of the following groups that are within the axes group.
+		let ax = obj.axis == "y" ? obj.margin.left : 0;
+		let ay = obj.axis == "y" ? 0 : obj.plotbox.y[1] - obj.margin.bottom
+		obj.d3node.attr("transform", `translate(${ax}, ${ay})` );
 		
 		// Reposition hte exponent.
 		let exponent = obj.d3node.select("g.exponent");
-		let exponentTranslate = obj.axis == "y" ?
-		  `translate(${0 + 6}, ${obj.margin.top + 3})` :
-		  `translate(${obj.range[1] - 10 }, ${0 - 6})`;
-		exponent.attr("transform", exponentTranslate);
+		let ex = obj.axis == "y" ? 0 + 6              : obj.range[1] - 10;
+		let ey = obj.axis == "y" ? obj.margin.top + 3 : 0 - 6;
+		exponent.attr("transform", `translate(${ex}, ${ey})`);
 		
 		// Reposition the +/- controls.
 		let controls = obj.d3node.select("g.controls");
-		let controlsTranslate = obj.axis == "y" ?
-		  `translate(${0 - 5}, ${obj.margin.top - 10})` :
-		  `translate(${obj.range[1] + 10}, ${0 + 5})`;
-		controls.attr("transform", controlsTranslate);
+		let cx = obj.axis == "y" ? 0 - 5               : obj.range[1] + 10;
+		let cy = obj.axis == "y" ? obj.margin.top - 10 : 0 + 5;
+		controls.attr("transform", `translate(${cx}, ${cy})`);
 		
 		// Reposition hte actual plus/minus.
 		let dyPlus = obj.axis == "y" ?  0 : -5;
@@ -141,6 +146,22 @@ export default class ordinalAxis{
 		
 		controls.select("text.minus").attr("dy", dyMinus)
 		controls.select("text.minus").attr("dx", dxMinus)
+		
+		
+		// Position the variable label.
+		let labelgroup = obj.d3node.select("g.variable-change");
+		let label = labelgroup.select("text.label");
+		
+		// The text should be flush with the axis. To allow easier positioning use the `text-anchor' property.
+		let textanchor = obj.axis == "y" ? "end" : "end";
+		label.attr("text-anchor",  textanchor)
+		     .attr("writing-mode", obj.axis == "y" ? "tb" : "lr")
+		
+		let lx = obj.axis == "y" ? 30 : obj.range[1];
+		let ly = obj.axis == "y" ? -obj.margin.top :  30;
+		let la = obj.axis == "y" ? 180 : 0
+		labelgroup.attr("transform", `rotate(${la}) translate(${lx}, ${ly})`)
+		
 		
 	} // position
 	

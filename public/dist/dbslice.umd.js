@@ -1253,6 +1253,9 @@
 		<text class="plus hover-highlight" ${textattributes}>+</text>
 		<text class="minus hover-highlight" ${textattributes}>-</text>
 	</g>
+	<g class="variable-change">
+		<text class="label hover-highlight" ${textattributes}>Variable name</text>
+	</g>
 `;
 
 
@@ -1272,7 +1275,7 @@
 		supportedtypes = ["log", "linear"];
 		
 		// These margins are required to completely fit the scales along with their labels, ticks and domain lines onto the plot.
-		margin = {top: 30, right: 20, bottom: 40, left: 40}
+		margin = {top: 30, right: 30, bottom: 40, left: 40}
 		
 		constructor(axis, plotbox, initvariable, ordinalvariables){
 			/* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `ordinalvariable' is a dbslice ordinal variable which is paired with this axis. */
@@ -1286,7 +1289,12 @@
 			obj.variableoptions = ordinalvariables;
 			
 			
-			obj.setdomain(initvariable.extent);
+			// Before setting the initial range extend it by 10% on either side to make sure the data fits neatly inside.
+			let domaindiff = initvariable.extent[1] - initvariable.extent[0];
+			obj.setdomain([
+				initvariable.extent[0] - domaindiff, 
+				initvariable.extent[1] + domaindiff
+			]);
 			
 			// When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
 			
@@ -1329,25 +1337,22 @@
 			// If the range changes, then the location of the axes must change also. And with them the exponents should change location.
 			let obj = this;
 			
-			// Position the axis.
-			let translate = obj.axis == "y" ? 
-			  `translate(${obj.margin.left}, ${0})` :
-			  `translate(${0}, ${obj.plotbox.y[1] - obj.margin.bottom})`;
-			obj.d3node.attr("transform", translate );
+			// Position the axis. This will impact all of the following groups that are within the axes group.
+			let ax = obj.axis == "y" ? obj.margin.left : 0;
+			let ay = obj.axis == "y" ? 0 : obj.plotbox.y[1] - obj.margin.bottom;
+			obj.d3node.attr("transform", `translate(${ax}, ${ay})` );
 			
 			// Reposition hte exponent.
 			let exponent = obj.d3node.select("g.exponent");
-			let exponentTranslate = obj.axis == "y" ?
-			  `translate(${0 + 6}, ${obj.margin.top + 3})` :
-			  `translate(${obj.range[1] - 10 }, ${0 - 6})`;
-			exponent.attr("transform", exponentTranslate);
+			let ex = obj.axis == "y" ? 0 + 6              : obj.range[1] - 10;
+			let ey = obj.axis == "y" ? obj.margin.top + 3 : 0 - 6;
+			exponent.attr("transform", `translate(${ex}, ${ey})`);
 			
 			// Reposition the +/- controls.
 			let controls = obj.d3node.select("g.controls");
-			let controlsTranslate = obj.axis == "y" ?
-			  `translate(${0 - 5}, ${obj.margin.top - 10})` :
-			  `translate(${obj.range[1] + 10}, ${0 + 5})`;
-			controls.attr("transform", controlsTranslate);
+			let cx = obj.axis == "y" ? 0 - 5               : obj.range[1] + 10;
+			let cy = obj.axis == "y" ? obj.margin.top - 10 : 0 + 5;
+			controls.attr("transform", `translate(${cx}, ${cy})`);
 			
 			// Reposition hte actual plus/minus.
 			let dyPlus = obj.axis == "y" ?  0 : -5;
@@ -1361,6 +1366,22 @@
 			
 			controls.select("text.minus").attr("dy", dyMinus);
 			controls.select("text.minus").attr("dx", dxMinus);
+			
+			
+			// Position the variable label.
+			let labelgroup = obj.d3node.select("g.variable-change");
+			let label = labelgroup.select("text.label");
+			
+			// The text should be flush with the axis. To allow easier positioning use the `text-anchor' property.
+			let textanchor = obj.axis == "y" ? "end" : "end";
+			label.attr("text-anchor",  textanchor)
+			     .attr("writing-mode", obj.axis == "y" ? "tb" : "lr");
+			
+			let lx = obj.axis == "y" ? 30 : obj.range[1];
+			let ly = obj.axis == "y" ? -obj.margin.top :  30;
+			let la = obj.axis == "y" ? 180 : 0;
+			labelgroup.attr("transform", `rotate(${la}) translate(${lx}, ${ly})`);
+			
 			
 		} // position
 		
@@ -1521,7 +1542,7 @@
 				<rect></rect>
 			</clipPath>
 			
-			<rect class="zoom-area" fill="rgb(255, 25, 255)"></rect>
+			<rect class="zoom-area" fill="rgb(255, 255, 255)" width="400" height="400"></rect>
 			
 			<g class="tooltip-anchor">
 				<circle class="anchor-point" r="1" opacity="0"></circle>
@@ -1545,40 +1566,24 @@
 	// This class is a template for two interactive axes svg based plotting.
 
 
-	// WILL HOLD THE ZOOM + PAN THOUGH!!!.
 
 
 	class twoInteractiveAxesInset{
 		
-		// Generally I'll need variables to select from, and data that needs to be plotted.
-		variables = []
+		
+		// Add some padding to the plot??
 		
 		
-		
-		/* For each axis I'll need:
-			The name of the selected variable
-			The scale to operate with
-		*/ 
-		
-		
-		
-		
+		// The width and height are added in the template to the svg and zoom area rect. clip path has not been implemented yet. In the end it's good to define actions to change the width and height if needed.
 		width = 400
 		height = 400
 		
 		
 		
 		constructor(variables){
-			// What should this one get?
-			
-			
 			let obj = this;
 			
-			
 			obj.node = html2element(template$1);
-			
-			
-			
 			
 			// `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
 			obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
@@ -1588,23 +1593,12 @@
 			obj.node.appendChild(obj.y.d3node.node());
 			obj.node.appendChild(obj.x.d3node.node());
 			
+			// Add the zooming.
+			obj.addZooming();
+			
 		
 		} // constructor
 		
-		
-		update(){
-			let obj = this;
-			
-			// Scale the svg.
-			obj.node.style.height = obj.height;
-			obj.node.style.width = obj.width;
-			
-			// Update the axes.
-			obj.y.setplotbox( obj.plotbox );
-			obj.x.setplotbox( obj.plotbox );
-			
-			
-		} // update
 		
 		
 		get plotbox(){
@@ -1622,6 +1616,66 @@
 			
 		} // plotbox
 		
+		
+		
+		// Maybe this can be an external module? But it depends directly on how the axis are specified - minimum reusability.
+		addZooming(){
+			let obj = this;
+			
+			// The current layout will keep adding on zoom. Rethink this for more responsiveness of the website.
+			let zoom = d3.zoom().scaleExtent([0.01, Infinity]).on("zoom", zoomed);
+		
+			// Zoom operates on a selection. In this case a rect has been added to the markup to perform this task.
+			d3.select( obj.node )
+			  .select("g.background")
+			  .select("rect.zoom-area")
+			  .call(zoom);
+			
+			
+			// As of now (23/03/2020) the default zoom behaviour (https://d3js.org/d3.v5.min.js) does not support independantly scalable y and x axis. If these are implemented then on first zoom action (panning or scaling) will have a movement as the internal transform vector (d3.event.transform) won't corespond to the image. 
+			
+			// The transformation vector is based on the domain of the image, therefore any manual scaling of the domain should also change it. The easiest way to overcome this is to apply the transformation as a delta to the existing state.
+			
+			// obj.viewtransform is where the current state is stored. If it is set to -1, then the given zoom action is not performed to allow any difference between d3.event.transform and obj.viewtransform due to manual rescaling of the domain to be resolved.
+			obj.viewtransform = d3.zoomIdentity;
+			
+			function zoomed(event){
+				
+				// Get the current scales, and reshape them back to the origin.
+				var t = event.transform;
+				var t0= obj.viewtransform;
+				
+				// Check if there was a manual change of the domain
+				if(t0 == -1){
+					t0 = t;
+				} // if
+				
+				// Hack to get the delta transformation.
+				var dt = d3.zoomIdentity;
+				dt.k = t.k / t0.k; 
+				dt.x = t.x - t0.x; 
+				dt.y = t.y - t0.y;
+				
+				obj.viewtransform = t;
+				
+				var xScaleDefined = obj.x.scale != undefined;
+				var yScaleDefined = obj.y.scale != undefined;
+				if(xScaleDefined && yScaleDefined){
+					
+					// dt is the transformation of the domain that should take place. So first we get the current range, we apply the view transformation, and then we convert that back to the domain.
+					let xdomain = obj.x.scale.range()
+					  .map(dt.invertX, dt)
+					  .map(obj.x.scale.invert, obj.x.scale);
+					obj.x.setdomain( xdomain );
+					
+					let ydomain = obj.y.scale.range()
+					  .map(dt.invertY, dt)
+					  .map(obj.y.scale.invert, obj.y.scale);
+					obj.y.setdomain( ydomain );
+				} // if
+			} // zoomed
+			  
+		} // addZooming
 		
 		
 		

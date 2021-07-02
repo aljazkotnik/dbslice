@@ -10477,7 +10477,7 @@
 
   var textattributes = "fill=\"black\" font-size=\"10px\" font-weight=\"bold\""; // text -> x="-8" / y="-0.32em"
 
-  var template$2 = "\n\t<g class=\"graphic\"></g>\n\t<g class=\"exponent\">\n\t\t<text ".concat(textattributes, ">\n\t\t\t<tspan>\n\t\t\t  x10\n\t\t\t  <tspan class=\"exp\" dy=\"-5\"></tspan>\n\t\t\t</tspan>\n\t\t</text>\n\t</g>\n\t<g class=\"controls\">\n\t\t<text class=\"plus hover-highlight\" ").concat(textattributes, ">+</text>\n\t\t<text class=\"minus hover-highlight\" ").concat(textattributes, ">-</text>\n\t</g>\n"); // The exponent should be replaced with the logarithmic controls if the axis switches from linear to log.
+  var template$2 = "\n\t<g class=\"graphic\"></g>\n\t<g class=\"exponent\">\n\t\t<text ".concat(textattributes, ">\n\t\t\t<tspan>\n\t\t\t  x10\n\t\t\t  <tspan class=\"exp\" dy=\"-5\"></tspan>\n\t\t\t</tspan>\n\t\t</text>\n\t</g>\n\t<g class=\"controls\">\n\t\t<text class=\"plus hover-highlight\" ").concat(textattributes, ">+</text>\n\t\t<text class=\"minus hover-highlight\" ").concat(textattributes, ">-</text>\n\t</g>\n\t<g class=\"variable-change\">\n\t\t<text class=\"label hover-highlight\" ").concat(textattributes, ">Variable name</text>\n\t</g>\n"); // The exponent should be replaced with the logarithmic controls if the axis switches from linear to log.
   // Now I need to add in a label saying linear/log
   // DONE!! Maybe a plus/minus next to the axes to increase the axis limits - instead of dragging the labels.
   // Maybe it'd be better
@@ -10491,7 +10491,7 @@
       this.supportedtypes = ["log", "linear"];
       this.margin = {
         top: 30,
-        right: 20,
+        right: 30,
         bottom: 40,
         left: 40
       };
@@ -10502,8 +10502,10 @@
       obj.axis = axis;
       obj.setplotbox(plotbox);
       obj.variable = initvariable;
-      obj.variableoptions = ordinalvariables;
-      obj.setdomain(initvariable.extent); // When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
+      obj.variableoptions = ordinalvariables; // Before setting the initial range extend it by 10% on either side to make sure the data fits neatly inside.
+
+      var domaindiff = initvariable.extent[1] - initvariable.extent[0];
+      obj.setdomain([initvariable.extent[0] - domaindiff, initvariable.extent[1] + domaindiff]); // When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
       // The vertical position of the axis doesn't actually depend on the range. The y-position for the x axis should be communicated from outside. The axis should always get the x and y dimesnion of the svg we're placing it on.
 
       obj.d3node = create$1("svg:g").attr("class", "axis").html(template$2); // Add the functionality to the domain change.
@@ -10539,18 +10541,21 @@
       key: "position",
       value: function position() {
         // If the range changes, then the location of the axes must change also. And with them the exponents should change location.
-        var obj = this; // Position the axis.
+        var obj = this; // Position the axis. This will impact all of the following groups that are within the axes group.
 
-        var translate = obj.axis == "y" ? "translate(".concat(obj.margin.left, ", ", 0, ")") : "translate(".concat(0, ", ", obj.plotbox.y[1] - obj.margin.bottom, ")");
-        obj.d3node.attr("transform", translate); // Reposition hte exponent.
+        var ax = obj.axis == "y" ? obj.margin.left : 0;
+        var ay = obj.axis == "y" ? 0 : obj.plotbox.y[1] - obj.margin.bottom;
+        obj.d3node.attr("transform", "translate(".concat(ax, ", ").concat(ay, ")")); // Reposition hte exponent.
 
         var exponent = obj.d3node.select("g.exponent");
-        var exponentTranslate = obj.axis == "y" ? "translate(".concat(0 + 6, ", ").concat(obj.margin.top + 3, ")") : "translate(".concat(obj.range[1] - 10, ", ").concat(0 - 6, ")");
-        exponent.attr("transform", exponentTranslate); // Reposition the +/- controls.
+        var ex = obj.axis == "y" ? 0 + 6 : obj.range[1] - 10;
+        var ey = obj.axis == "y" ? obj.margin.top + 3 : 0 - 6;
+        exponent.attr("transform", "translate(".concat(ex, ", ").concat(ey, ")")); // Reposition the +/- controls.
 
         var controls = obj.d3node.select("g.controls");
-        var controlsTranslate = obj.axis == "y" ? "translate(".concat(0 - 5, ", ").concat(obj.margin.top - 10, ")") : "translate(".concat(obj.range[1] + 10, ", ").concat(0 + 5, ")");
-        controls.attr("transform", controlsTranslate); // Reposition hte actual plus/minus.
+        var cx = obj.axis == "y" ? 0 - 5 : obj.range[1] + 10;
+        var cy = obj.axis == "y" ? obj.margin.top - 10 : 0 + 5;
+        controls.attr("transform", "translate(".concat(cx, ", ").concat(cy, ")")); // Reposition hte actual plus/minus.
 
         var dyPlus = obj.axis == "y" ? 0 : -5;
         var dxPlus = obj.axis == "y" ? -5 : 0;
@@ -10559,7 +10564,17 @@
         controls.select("text.plus").attr("dy", dyPlus);
         controls.select("text.plus").attr("dx", dxPlus);
         controls.select("text.minus").attr("dy", dyMinus);
-        controls.select("text.minus").attr("dx", dxMinus);
+        controls.select("text.minus").attr("dx", dxMinus); // Position the variable label.
+
+        var labelgroup = obj.d3node.select("g.variable-change");
+        var label = labelgroup.select("text.label"); // The text should be flush with the axis. To allow easier positioning use the `text-anchor' property.
+
+        var textanchor = obj.axis == "y" ? "end" : "end";
+        label.attr("text-anchor", textanchor).attr("writing-mode", obj.axis == "y" ? "tb" : "lr");
+        var lx = obj.axis == "y" ? 30 : obj.range[1];
+        var ly = obj.axis == "y" ? -obj.margin.top : 30;
+        var la = obj.axis == "y" ? 180 : 0;
+        labelgroup.attr("transform", "rotate(".concat(la, ") translate(").concat(lx, ", ").concat(ly, ")"));
       } // position
 
     }, {
@@ -10687,48 +10702,31 @@
   exponent  : power exponent (big number labels may overlap otherwise)
   */
 
-  var template$1 = "\n\t<svg class=\"plot-area\" width=\"400\" height=\"400\">\n\t\t\n\t\t<g class=\"background\">\n\t\t\t<clipPath>\n\t\t\t\t<rect></rect>\n\t\t\t</clipPath>\n\t\t\t\n\t\t\t<rect class=\"zoom-area\" fill=\"rgb(255, 25, 255)\"></rect>\n\t\t\t\n\t\t\t<g class=\"tooltip-anchor\">\n\t\t\t\t<circle class=\"anchor-point\" r=\"1\" opacity=\"0\"></circle>\n\t\t\t</g>\n\t\t</g>\n\t\t\n\t\t<g class=\"data\"></g>\n\t\t<g class=\"markup\"></g>\n\t\t\n\t\t\n\t</svg>\n"; // The axis scale needs to have access to the data and to the svg dimensions. Actually not access to the data, but access to the data extent. This has been solved by adding calculated extents to the variable objects.
+  var template$1 = "\n\t<svg class=\"plot-area\" width=\"400\" height=\"400\">\n\t\t\n\t\t<g class=\"background\">\n\t\t\t<clipPath>\n\t\t\t\t<rect></rect>\n\t\t\t</clipPath>\n\t\t\t\n\t\t\t<rect class=\"zoom-area\" fill=\"rgb(255, 255, 255)\" width=\"400\" height=\"400\"></rect>\n\t\t\t\n\t\t\t<g class=\"tooltip-anchor\">\n\t\t\t\t<circle class=\"anchor-point\" r=\"1\" opacity=\"0\"></circle>\n\t\t\t</g>\n\t\t</g>\n\t\t\n\t\t<g class=\"data\"></g>\n\t\t<g class=\"markup\"></g>\n\t\t\n\t\t\n\t</svg>\n"; // The axis scale needs to have access to the data and to the svg dimensions. Actually not access to the data, but access to the data extent. This has been solved by adding calculated extents to the variable objects.
   // It's best to just pass all the variables to the axis, and let it handle everything connected to it. 
   // This class is a template for two interactive axes svg based plotting.
-  // WILL HOLD THE ZOOM + PAN THOUGH!!!.
 
   var twoInteractiveAxesInset = /*#__PURE__*/function () {
-    // Generally I'll need variables to select from, and data that needs to be plotted.
-
-    /* For each axis I'll need:
-    	The name of the selected variable
-    	The scale to operate with
-    */
+    // Add some padding to the plot??
+    // The width and height are added in the template to the svg and zoom area rect. clip path has not been implemented yet. In the end it's good to define actions to change the width and height if needed.
     function twoInteractiveAxesInset(variables) {
       _classCallCheck(this, twoInteractiveAxesInset);
 
-      this.variables = [];
       this.width = 400;
-      this.height = 400; // What should this one get?
-
+      this.height = 400;
       var obj = this;
       obj.node = html2element(template$1); // `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
 
       obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
       obj.x = new ordinalAxis("x", obj.plotbox, variables[1], variables);
       obj.node.appendChild(obj.y.d3node.node());
-      obj.node.appendChild(obj.x.d3node.node());
+      obj.node.appendChild(obj.x.d3node.node()); // Add the zooming.
+
+      obj.addZooming();
     } // constructor
 
 
     _createClass$1(twoInteractiveAxesInset, [{
-      key: "update",
-      value: function update() {
-        var obj = this; // Scale the svg.
-
-        obj.node.style.height = obj.height;
-        obj.node.style.width = obj.width; // Update the axes.
-
-        obj.y.setplotbox(obj.plotbox);
-        obj.x.setplotbox(obj.plotbox);
-      } // update
-
-    }, {
       key: "plotbox",
       get: function get() {
         // Specify the area of the svg dedicated to the plot. In this case it'll be all of it. The margin determines the amount of whitespace around the plot. This whitespace will NOT include the axis labels etc.
@@ -10747,6 +10745,51 @@
         };
         return plot;
       } // plotbox
+      // Maybe this can be an external module? But it depends directly on how the axis are specified - minimum reusability.
+
+    }, {
+      key: "addZooming",
+      value: function addZooming() {
+        var obj = this; // The current layout will keep adding on zoom. Rethink this for more responsiveness of the website.
+
+        var zoom = d3.zoom().scaleExtent([0.01, Infinity]).on("zoom", zoomed); // Zoom operates on a selection. In this case a rect has been added to the markup to perform this task.
+
+        d3.select(obj.node).select("g.background").select("rect.zoom-area").call(zoom); // As of now (23/03/2020) the default zoom behaviour (https://d3js.org/d3.v5.min.js) does not support independantly scalable y and x axis. If these are implemented then on first zoom action (panning or scaling) will have a movement as the internal transform vector (d3.event.transform) won't corespond to the image. 
+        // The transformation vector is based on the domain of the image, therefore any manual scaling of the domain should also change it. The easiest way to overcome this is to apply the transformation as a delta to the existing state.
+        // obj.viewtransform is where the current state is stored. If it is set to -1, then the given zoom action is not performed to allow any difference between d3.event.transform and obj.viewtransform due to manual rescaling of the domain to be resolved.
+
+        obj.viewtransform = d3.zoomIdentity;
+
+        function zoomed(event) {
+          // Get the current scales, and reshape them back to the origin.
+          var t = event.transform;
+          var t0 = obj.viewtransform; // Check if there was a manual change of the domain
+
+          if (t0 == -1) {
+            t0 = t;
+          } // if
+          // Hack to get the delta transformation.
+
+
+          var dt = d3.zoomIdentity;
+          dt.k = t.k / t0.k;
+          dt.x = t.x - t0.x;
+          dt.y = t.y - t0.y;
+          obj.viewtransform = t;
+          var xScaleDefined = obj.x.scale != undefined;
+          var yScaleDefined = obj.y.scale != undefined;
+
+          if (xScaleDefined && yScaleDefined) {
+            // dt is the transformation of the domain that should take place. So first we get the current range, we apply the view transformation, and then we convert that back to the domain.
+            var xdomain = obj.x.scale.range().map(dt.invertX, dt).map(obj.x.scale.invert, obj.x.scale);
+            obj.x.setdomain(xdomain);
+            var ydomain = obj.y.scale.range().map(dt.invertY, dt).map(obj.y.scale.invert, obj.y.scale);
+            obj.y.setdomain(ydomain);
+          } // if
+
+        } // zoomed
+
+      } // addZooming
 
     }]);
 

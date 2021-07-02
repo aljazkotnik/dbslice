@@ -33,7 +33,7 @@ let template = `
 				<rect></rect>
 			</clipPath>
 			
-			<rect class="zoom-area" fill="rgb(255, 25, 255)"></rect>
+			<rect class="zoom-area" fill="rgb(255, 255, 255)" width="400" height="400"></rect>
 			
 			<g class="tooltip-anchor">
 				<circle class="anchor-point" r="1" opacity="0"></circle>
@@ -57,40 +57,24 @@ let template = `
 // This class is a template for two interactive axes svg based plotting.
 
 
-// WILL HOLD THE ZOOM + PAN THOUGH!!!.
 
 
 export default class twoInteractiveAxesInset{
 	
-	// Generally I'll need variables to select from, and data that needs to be plotted.
-	variables = []
+	
+	// Add some padding to the plot??
 	
 	
-	
-	/* For each axis I'll need:
-		The name of the selected variable
-		The scale to operate with
-	*/ 
-	
-	
-	
-	
+	// The width and height are added in the template to the svg and zoom area rect. clip path has not been implemented yet. In the end it's good to define actions to change the width and height if needed.
 	width = 400
 	height = 400
 	
 	
 	
 	constructor(variables){
-		// What should this one get?
-		
-		
 		let obj = this;
 		
-		
 		obj.node = html2element(template);
-		
-		
-		
 		
 		// `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
 		obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
@@ -100,23 +84,12 @@ export default class twoInteractiveAxesInset{
 		obj.node.appendChild(obj.y.d3node.node());
 		obj.node.appendChild(obj.x.d3node.node());
 		
+		// Add the zooming.
+		obj.addZooming();
+		
 	
 	} // constructor
 	
-	
-	update(){
-		let obj = this;
-		
-		// Scale the svg.
-		obj.node.style.height = obj.height;
-		obj.node.style.width = obj.width;
-		
-		// Update the axes.
-		obj.y.setplotbox( obj.plotbox );
-		obj.x.setplotbox( obj.plotbox );
-		
-		
-	} // update
 	
 	
 	get plotbox(){
@@ -134,6 +107,66 @@ export default class twoInteractiveAxesInset{
 		
 	} // plotbox
 	
+	
+	
+	// Maybe this can be an external module? But it depends directly on how the axis are specified - minimum reusability.
+	addZooming(){
+		let obj = this;
+		
+		// The current layout will keep adding on zoom. Rethink this for more responsiveness of the website.
+		let zoom = d3.zoom().scaleExtent([0.01, Infinity]).on("zoom", zoomed);
+	
+		// Zoom operates on a selection. In this case a rect has been added to the markup to perform this task.
+		d3.select( obj.node )
+		  .select("g.background")
+		  .select("rect.zoom-area")
+		  .call(zoom);
+		
+		
+		// As of now (23/03/2020) the default zoom behaviour (https://d3js.org/d3.v5.min.js) does not support independantly scalable y and x axis. If these are implemented then on first zoom action (panning or scaling) will have a movement as the internal transform vector (d3.event.transform) won't corespond to the image. 
+		
+		// The transformation vector is based on the domain of the image, therefore any manual scaling of the domain should also change it. The easiest way to overcome this is to apply the transformation as a delta to the existing state.
+		
+		// obj.viewtransform is where the current state is stored. If it is set to -1, then the given zoom action is not performed to allow any difference between d3.event.transform and obj.viewtransform due to manual rescaling of the domain to be resolved.
+		obj.viewtransform = d3.zoomIdentity
+		
+		function zoomed(event){
+			
+			// Get the current scales, and reshape them back to the origin.
+			var t = event.transform
+			var t0= obj.viewtransform
+			
+			// Check if there was a manual change of the domain
+			if(t0 == -1){
+				t0 = t
+			} // if
+			
+			// Hack to get the delta transformation.
+			var dt = d3.zoomIdentity
+			dt.k = t.k / t0.k 
+			dt.x = t.x - t0.x 
+			dt.y = t.y - t0.y
+			
+			obj.viewtransform = t
+			
+			var xScaleDefined = obj.x.scale != undefined
+			var yScaleDefined = obj.y.scale != undefined
+			if(xScaleDefined && yScaleDefined){
+				
+				// dt is the transformation of the domain that should take place. So first we get the current range, we apply the view transformation, and then we convert that back to the domain.
+				let xdomain = obj.x.scale.range()
+				  .map(dt.invertX, dt)
+				  .map(obj.x.scale.invert, obj.x.scale)
+				obj.x.setdomain( xdomain )
+				
+				let ydomain = obj.y.scale.range()
+				  .map(dt.invertY, dt)
+				  .map(obj.y.scale.invert, obj.y.scale)
+				obj.y.setdomain( ydomain )
+			} // if
+		} // zoomed
+		  
+	} // addZooming
 	
 	
 	
