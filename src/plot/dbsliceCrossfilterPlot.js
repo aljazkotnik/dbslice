@@ -19,7 +19,7 @@ Create a uniform backbone for all crossfilter plots.
 
 */
 
-
+// Maybe move the width and height from the CSS into here?
 import {css} from "./css.js";
 
 
@@ -42,7 +42,7 @@ let template = `
 
 
 export default class dbsliceCrossfilterPlot extends dragnode {
-	constructor(data, configobj){
+	constructor(configobj){
 		/*
 		- Should have access to the current crossfilter selection.
 		- Access to the `variables' array.
@@ -84,7 +84,7 @@ export default class dbsliceCrossfilterPlot extends dragnode {
 		
 		// Setup with the user provided inputs.
 		obj.config = configobj;
-		obj.data = data;
+		
 	
 	
 		

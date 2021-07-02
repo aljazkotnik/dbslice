@@ -15,7 +15,9 @@ export default class dbsliceFile {
 	constructor(file, requester){
 		
 		// How to load if file is an actual File object.
-		
+		if(typeof(file) == "string"){
+			file = {url: file, filename: file};
+		} // if
 		
 		this.url = file.url
 		this.filename = file.filename

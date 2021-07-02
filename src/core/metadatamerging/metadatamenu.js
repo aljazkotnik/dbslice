@@ -207,14 +207,17 @@ export default class metadatamenu {
 			
 			
 			
-			// Calculate all the number of unique values for the variables.
+			// Calculate all the number of unique values for the variables, and also the extents for ordinal variables.
 			allvariables.forEach(variable=>{
-				variable.n = alltasks.length;
-				variable.nunique = unique(alltasks.map(row=>row[variable.name])).length;
+				let vals = alltasks.map(row=>row[variable.name]);
+				variable.n = vals.length;
+				variable.nunique = unique(vals).length;
+				
+				// Add extents to any ordinal variables.
+				if(variable.category == "ordinal"){
+					variable.extent = d3.extent( vals );
+				} // if
 			}) // forEach
-			
-			
-			
 			
 			return {
 				data: alltasks,

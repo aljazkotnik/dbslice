@@ -1,6 +1,22 @@
 (function () {
   'use strict';
 
+  function _typeof(obj) {
+    "@babel/helpers - typeof";
+
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof = function (obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof = function (obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof(obj);
+  }
+
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -22,6 +38,128 @@
     if (staticProps) _defineProperties$1(Constructor, staticProps);
     return Constructor;
   }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function");
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) _setPrototypeOf(subClass, superClass);
+  }
+
+  function _getPrototypeOf(o) {
+    _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
+      return o.__proto__ || Object.getPrototypeOf(o);
+    };
+    return _getPrototypeOf(o);
+  }
+
+  function _setPrototypeOf(o, p) {
+    _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+      o.__proto__ = p;
+      return o;
+    };
+
+    return _setPrototypeOf(o, p);
+  }
+
+  function _isNativeReflectConstruct() {
+    if (typeof Reflect === "undefined" || !Reflect.construct) return false;
+    if (Reflect.construct.sham) return false;
+    if (typeof Proxy === "function") return true;
+
+    try {
+      Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {}));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _assertThisInitialized$1(self) {
+    if (self === void 0) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return self;
+  }
+
+  function _possibleConstructorReturn(self, call) {
+    if (call && (typeof call === "object" || typeof call === "function")) {
+      return call;
+    }
+
+    return _assertThisInitialized$1(self);
+  }
+
+  function _createSuper(Derived) {
+    var hasNativeReflectConstruct = _isNativeReflectConstruct();
+
+    return function _createSuperInternal() {
+      var Super = _getPrototypeOf(Derived),
+          result;
+
+      if (hasNativeReflectConstruct) {
+        var NewTarget = _getPrototypeOf(this).constructor;
+
+        result = Reflect.construct(Super, arguments, NewTarget);
+      } else {
+        result = Super.apply(this, arguments);
+      }
+
+      return _possibleConstructorReturn(this, result);
+    };
+  }
+
+  function html2element(html) {
+    var template = document.createElement('template');
+    template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
+
+    return template.content.firstChild;
+  } // html2element
+  // Arrays
+
+  function unique$1(d) {
+    // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
+    function onlyUnique(value, index, self) {
+      return self.indexOf(value) === index;
+    } // unique
+
+
+    return d.filter(onlyUnique);
+  } // unique
+
+  function arrayEqual(A, B) {
+    return arrayIncludesAll(A, B) && arrayIncludesAll(B, A);
+  } // arrayEqual
+
+  function arrayIncludesAll(A, B) {
+    // 'arrayIncludesAll' checks if array A includes all elements of array B. The elements of the arrays are expected to be strings.
+    // Return element of B if it is not contained in A. If the response array has length 0 then A includes all elements of B, and 'true' is returned.
+    var f = B.filter(function (b) {
+      return !A.includes(b);
+    });
+    return f.length == 0 ? true : false;
+  } // arrayIncludesAll
+
+  function calculateExponent(val) {
+    // calculate the exponent for the scientific notation.
+    var exp = 0;
+
+    while (Math.floor(val / Math.pow(10, exp + 1)) > 0) {
+      exp += 1;
+    } // Convert the exponent to multiple of three
+
+
+    return Math.floor(exp / 3) * 3;
+  } // calculateExponent
 
   function ascending$1(a, b) {
     return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -79,36 +217,6 @@
   const ascendingBisect = bisector(ascending$1);
   const bisectRight = ascendingBisect.right;
   bisector(number$2).center;
-
-  function extent(values, valueof) {
-    let min;
-    let max;
-    if (valueof === undefined) {
-      for (const value of values) {
-        if (value != null) {
-          if (min === undefined) {
-            if (value >= value) min = max = value;
-          } else {
-            if (min > value) min = value;
-            if (max < value) max = value;
-          }
-        }
-      }
-    } else {
-      let index = -1;
-      for (let value of values) {
-        if ((value = valueof(value, ++index, values)) != null) {
-          if (min === undefined) {
-            if (value >= value) min = max = value;
-          } else {
-            if (min > value) min = value;
-            if (max < value) max = value;
-          }
-        }
-      }
-    }
-    return [min, max];
-  }
 
   var e10 = Math.sqrt(50),
       e5 = Math.sqrt(10),
@@ -604,7 +712,7 @@
     querySelectorAll: function(selector) { return this._parent.querySelectorAll(selector); }
   };
 
-  function constant$1(x) {
+  function constant$2(x) {
     return function() {
       return x;
     };
@@ -691,7 +799,7 @@
         parents = this._parents,
         groups = this._groups;
 
-    if (typeof value !== "function") value = constant$1(value);
+    if (typeof value !== "function") value = constant$2(value);
 
     for (var m = groups.length, update = new Array(m), enter = new Array(m), exit = new Array(m), j = 0; j < m; ++j) {
       var parent = parents[j],
@@ -1322,6 +1430,283 @@
 
   function create$1(name) {
     return select(creator(name).call(document.documentElement));
+  }
+
+  function sourceEvent(event) {
+    let sourceEvent;
+    while (sourceEvent = event.sourceEvent) event = sourceEvent;
+    return event;
+  }
+
+  function pointer(event, node) {
+    event = sourceEvent(event);
+    if (node === undefined) node = event.currentTarget;
+    if (node) {
+      var svg = node.ownerSVGElement || node;
+      if (svg.createSVGPoint) {
+        var point = svg.createSVGPoint();
+        point.x = event.clientX, point.y = event.clientY;
+        point = point.matrixTransform(node.getScreenCTM().inverse());
+        return [point.x, point.y];
+      }
+      if (node.getBoundingClientRect) {
+        var rect = node.getBoundingClientRect();
+        return [event.clientX - rect.left - node.clientLeft, event.clientY - rect.top - node.clientTop];
+      }
+    }
+    return [event.pageX, event.pageY];
+  }
+
+  function nopropagation(event) {
+    event.stopImmediatePropagation();
+  }
+
+  function noevent(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  function dragDisable(view) {
+    var root = view.document.documentElement,
+        selection = select(view).on("dragstart.drag", noevent, true);
+    if ("onselectstart" in root) {
+      selection.on("selectstart.drag", noevent, true);
+    } else {
+      root.__noselect = root.style.MozUserSelect;
+      root.style.MozUserSelect = "none";
+    }
+  }
+
+  function yesdrag(view, noclick) {
+    var root = view.document.documentElement,
+        selection = select(view).on("dragstart.drag", null);
+    if (noclick) {
+      selection.on("click.drag", noevent, true);
+      setTimeout(function() { selection.on("click.drag", null); }, 0);
+    }
+    if ("onselectstart" in root) {
+      selection.on("selectstart.drag", null);
+    } else {
+      root.style.MozUserSelect = root.__noselect;
+      delete root.__noselect;
+    }
+  }
+
+  var constant$1 = x => () => x;
+
+  function DragEvent(type, {
+    sourceEvent,
+    subject,
+    target,
+    identifier,
+    active,
+    x, y, dx, dy,
+    dispatch
+  }) {
+    Object.defineProperties(this, {
+      type: {value: type, enumerable: true, configurable: true},
+      sourceEvent: {value: sourceEvent, enumerable: true, configurable: true},
+      subject: {value: subject, enumerable: true, configurable: true},
+      target: {value: target, enumerable: true, configurable: true},
+      identifier: {value: identifier, enumerable: true, configurable: true},
+      active: {value: active, enumerable: true, configurable: true},
+      x: {value: x, enumerable: true, configurable: true},
+      y: {value: y, enumerable: true, configurable: true},
+      dx: {value: dx, enumerable: true, configurable: true},
+      dy: {value: dy, enumerable: true, configurable: true},
+      _: {value: dispatch}
+    });
+  }
+
+  DragEvent.prototype.on = function() {
+    var value = this._.on.apply(this._, arguments);
+    return value === this._ ? this : value;
+  };
+
+  // Ignore right-click, since that should open the context menu.
+  function defaultFilter(event) {
+    return !event.ctrlKey && !event.button;
+  }
+
+  function defaultContainer() {
+    return this.parentNode;
+  }
+
+  function defaultSubject(event, d) {
+    return d == null ? {x: event.x, y: event.y} : d;
+  }
+
+  function defaultTouchable() {
+    return navigator.maxTouchPoints || ("ontouchstart" in this);
+  }
+
+  function drag() {
+    var filter = defaultFilter,
+        container = defaultContainer,
+        subject = defaultSubject,
+        touchable = defaultTouchable,
+        gestures = {},
+        listeners = dispatch("start", "drag", "end"),
+        active = 0,
+        mousedownx,
+        mousedowny,
+        mousemoving,
+        touchending,
+        clickDistance2 = 0;
+
+    function drag(selection) {
+      selection
+          .on("mousedown.drag", mousedowned)
+        .filter(touchable)
+          .on("touchstart.drag", touchstarted)
+          .on("touchmove.drag", touchmoved)
+          .on("touchend.drag touchcancel.drag", touchended)
+          .style("touch-action", "none")
+          .style("-webkit-tap-highlight-color", "rgba(0,0,0,0)");
+    }
+
+    function mousedowned(event, d) {
+      if (touchending || !filter.call(this, event, d)) return;
+      var gesture = beforestart(this, container.call(this, event, d), event, d, "mouse");
+      if (!gesture) return;
+      select(event.view).on("mousemove.drag", mousemoved, true).on("mouseup.drag", mouseupped, true);
+      dragDisable(event.view);
+      nopropagation(event);
+      mousemoving = false;
+      mousedownx = event.clientX;
+      mousedowny = event.clientY;
+      gesture("start", event);
+    }
+
+    function mousemoved(event) {
+      noevent(event);
+      if (!mousemoving) {
+        var dx = event.clientX - mousedownx, dy = event.clientY - mousedowny;
+        mousemoving = dx * dx + dy * dy > clickDistance2;
+      }
+      gestures.mouse("drag", event);
+    }
+
+    function mouseupped(event) {
+      select(event.view).on("mousemove.drag mouseup.drag", null);
+      yesdrag(event.view, mousemoving);
+      noevent(event);
+      gestures.mouse("end", event);
+    }
+
+    function touchstarted(event, d) {
+      if (!filter.call(this, event, d)) return;
+      var touches = event.changedTouches,
+          c = container.call(this, event, d),
+          n = touches.length, i, gesture;
+
+      for (i = 0; i < n; ++i) {
+        if (gesture = beforestart(this, c, event, d, touches[i].identifier, touches[i])) {
+          nopropagation(event);
+          gesture("start", event, touches[i]);
+        }
+      }
+    }
+
+    function touchmoved(event) {
+      var touches = event.changedTouches,
+          n = touches.length, i, gesture;
+
+      for (i = 0; i < n; ++i) {
+        if (gesture = gestures[touches[i].identifier]) {
+          noevent(event);
+          gesture("drag", event, touches[i]);
+        }
+      }
+    }
+
+    function touchended(event) {
+      var touches = event.changedTouches,
+          n = touches.length, i, gesture;
+
+      if (touchending) clearTimeout(touchending);
+      touchending = setTimeout(function() { touchending = null; }, 500); // Ghost clicks are delayed!
+      for (i = 0; i < n; ++i) {
+        if (gesture = gestures[touches[i].identifier]) {
+          nopropagation(event);
+          gesture("end", event, touches[i]);
+        }
+      }
+    }
+
+    function beforestart(that, container, event, d, identifier, touch) {
+      var dispatch = listeners.copy(),
+          p = pointer(touch || event, container), dx, dy,
+          s;
+
+      if ((s = subject.call(that, new DragEvent("beforestart", {
+          sourceEvent: event,
+          target: drag,
+          identifier,
+          active,
+          x: p[0],
+          y: p[1],
+          dx: 0,
+          dy: 0,
+          dispatch
+        }), d)) == null) return;
+
+      dx = s.x - p[0] || 0;
+      dy = s.y - p[1] || 0;
+
+      return function gesture(type, event, touch) {
+        var p0 = p, n;
+        switch (type) {
+          case "start": gestures[identifier] = gesture, n = active++; break;
+          case "end": delete gestures[identifier], --active; // nobreak
+          case "drag": p = pointer(touch || event, container), n = active; break;
+        }
+        dispatch.call(
+          type,
+          that,
+          new DragEvent(type, {
+            sourceEvent: event,
+            subject: s,
+            target: drag,
+            identifier,
+            active: n,
+            x: p[0] + dx,
+            y: p[1] + dy,
+            dx: p[0] - p0[0],
+            dy: p[1] - p0[1],
+            dispatch
+          }),
+          d
+        );
+      };
+    }
+
+    drag.filter = function(_) {
+      return arguments.length ? (filter = typeof _ === "function" ? _ : constant$1(!!_), drag) : filter;
+    };
+
+    drag.container = function(_) {
+      return arguments.length ? (container = typeof _ === "function" ? _ : constant$1(_), drag) : container;
+    };
+
+    drag.subject = function(_) {
+      return arguments.length ? (subject = typeof _ === "function" ? _ : constant$1(_), drag) : subject;
+    };
+
+    drag.touchable = function(_) {
+      return arguments.length ? (touchable = typeof _ === "function" ? _ : constant$1(!!_), drag) : touchable;
+    };
+
+    drag.on = function() {
+      var value = listeners.on.apply(listeners, arguments);
+      return value === listeners ? drag : value;
+    };
+
+    drag.clickDistance = function(_) {
+      return arguments.length ? (clickDistance2 = (_ = +_) * _, drag) : Math.sqrt(clickDistance2);
+    };
+
+    return drag;
   }
 
   function define(constructor, factory, prototype) {
@@ -2991,6 +3376,205 @@
   selection.prototype.interrupt = selection_interrupt;
   selection.prototype.transition = selection_transition;
 
+  var EOL = {},
+      EOF = {},
+      QUOTE = 34,
+      NEWLINE = 10,
+      RETURN = 13;
+
+  function objectConverter(columns) {
+    return new Function("d", "return {" + columns.map(function(name, i) {
+      return JSON.stringify(name) + ": d[" + i + "] || \"\"";
+    }).join(",") + "}");
+  }
+
+  function customConverter(columns, f) {
+    var object = objectConverter(columns);
+    return function(row, i) {
+      return f(object(row), i, columns);
+    };
+  }
+
+  // Compute unique columns in order of discovery.
+  function inferColumns(rows) {
+    var columnSet = Object.create(null),
+        columns = [];
+
+    rows.forEach(function(row) {
+      for (var column in row) {
+        if (!(column in columnSet)) {
+          columns.push(columnSet[column] = column);
+        }
+      }
+    });
+
+    return columns;
+  }
+
+  function pad(value, width) {
+    var s = value + "", length = s.length;
+    return length < width ? new Array(width - length + 1).join(0) + s : s;
+  }
+
+  function formatYear(year) {
+    return year < 0 ? "-" + pad(-year, 6)
+      : year > 9999 ? "+" + pad(year, 6)
+      : pad(year, 4);
+  }
+
+  function formatDate(date) {
+    var hours = date.getUTCHours(),
+        minutes = date.getUTCMinutes(),
+        seconds = date.getUTCSeconds(),
+        milliseconds = date.getUTCMilliseconds();
+    return isNaN(date) ? "Invalid Date"
+        : formatYear(date.getUTCFullYear()) + "-" + pad(date.getUTCMonth() + 1, 2) + "-" + pad(date.getUTCDate(), 2)
+        + (milliseconds ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(seconds, 2) + "." + pad(milliseconds, 3) + "Z"
+        : seconds ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(seconds, 2) + "Z"
+        : minutes || hours ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + "Z"
+        : "");
+  }
+
+  function dsvFormat(delimiter) {
+    var reFormat = new RegExp("[\"" + delimiter + "\n\r]"),
+        DELIMITER = delimiter.charCodeAt(0);
+
+    function parse(text, f) {
+      var convert, columns, rows = parseRows(text, function(row, i) {
+        if (convert) return convert(row, i - 1);
+        columns = row, convert = f ? customConverter(row, f) : objectConverter(row);
+      });
+      rows.columns = columns || [];
+      return rows;
+    }
+
+    function parseRows(text, f) {
+      var rows = [], // output rows
+          N = text.length,
+          I = 0, // current character index
+          n = 0, // current line number
+          t, // current token
+          eof = N <= 0, // current token followed by EOF?
+          eol = false; // current token followed by EOL?
+
+      // Strip the trailing newline.
+      if (text.charCodeAt(N - 1) === NEWLINE) --N;
+      if (text.charCodeAt(N - 1) === RETURN) --N;
+
+      function token() {
+        if (eof) return EOF;
+        if (eol) return eol = false, EOL;
+
+        // Unescape quotes.
+        var i, j = I, c;
+        if (text.charCodeAt(j) === QUOTE) {
+          while (I++ < N && text.charCodeAt(I) !== QUOTE || text.charCodeAt(++I) === QUOTE);
+          if ((i = I) >= N) eof = true;
+          else if ((c = text.charCodeAt(I++)) === NEWLINE) eol = true;
+          else if (c === RETURN) { eol = true; if (text.charCodeAt(I) === NEWLINE) ++I; }
+          return text.slice(j + 1, i - 1).replace(/""/g, "\"");
+        }
+
+        // Find next delimiter or newline.
+        while (I < N) {
+          if ((c = text.charCodeAt(i = I++)) === NEWLINE) eol = true;
+          else if (c === RETURN) { eol = true; if (text.charCodeAt(I) === NEWLINE) ++I; }
+          else if (c !== DELIMITER) continue;
+          return text.slice(j, i);
+        }
+
+        // Return last token before EOF.
+        return eof = true, text.slice(j, N);
+      }
+
+      while ((t = token()) !== EOF) {
+        var row = [];
+        while (t !== EOL && t !== EOF) row.push(t), t = token();
+        if (f && (row = f(row, n++)) == null) continue;
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function preformatBody(rows, columns) {
+      return rows.map(function(row) {
+        return columns.map(function(column) {
+          return formatValue(row[column]);
+        }).join(delimiter);
+      });
+    }
+
+    function format(rows, columns) {
+      if (columns == null) columns = inferColumns(rows);
+      return [columns.map(formatValue).join(delimiter)].concat(preformatBody(rows, columns)).join("\n");
+    }
+
+    function formatBody(rows, columns) {
+      if (columns == null) columns = inferColumns(rows);
+      return preformatBody(rows, columns).join("\n");
+    }
+
+    function formatRows(rows) {
+      return rows.map(formatRow).join("\n");
+    }
+
+    function formatRow(row) {
+      return row.map(formatValue).join(delimiter);
+    }
+
+    function formatValue(value) {
+      return value == null ? ""
+          : value instanceof Date ? formatDate(value)
+          : reFormat.test(value += "") ? "\"" + value.replace(/"/g, "\"\"") + "\""
+          : value;
+    }
+
+    return {
+      parse: parse,
+      parseRows: parseRows,
+      format: format,
+      formatBody: formatBody,
+      formatRows: formatRows,
+      formatRow: formatRow,
+      formatValue: formatValue
+    };
+  }
+
+  var csv$1 = dsvFormat(",");
+
+  var csvParse = csv$1.parse;
+
+  function responseText(response) {
+    if (!response.ok) throw new Error(response.status + " " + response.statusText);
+    return response.text();
+  }
+
+  function text(input, init) {
+    return fetch(input, init).then(responseText);
+  }
+
+  function dsvParse(parse) {
+    return function(input, init, row) {
+      if (arguments.length === 2 && typeof init === "function") row = init, init = undefined;
+      return text(input, init).then(function(response) {
+        return parse(response, row);
+      });
+    };
+  }
+
+  var csv = dsvParse(csvParse);
+
+  function responseJson(response) {
+    if (!response.ok) throw new Error(response.status + " " + response.statusText);
+    if (response.status === 204 || response.status === 205) return;
+    return response.json();
+  }
+
+  function json(input, init) {
+    return fetch(input, init).then(responseJson);
+  }
+
   function formatDecimal(x) {
     return Math.abs(x = Math.round(x)) >= 1e21
         ? x.toLocaleString("en").replace(/,/g, "")
@@ -3711,24 +4295,883 @@
     return scale;
   }
 
-  function html2element(html) {
-    var template = document.createElement('template');
-    template.innerHTML = html.trim(); // Never return a text node of whitespace as the result
+  var d3$1 = {
+    text: text,
+    csv: csv,
+    json: json,
+    csvParse: csvParse
+  }; // Handle the erros within the files, and not within a separate object!!
 
-    return template.content.firstChild;
-  } // html2element
-
-  function calculateExponent(val) {
-    // calculate the exponent for the scientific notation.
-    var exp = 0;
-
-    while (Math.floor(val / Math.pow(10, exp + 1)) > 0) {
-      exp += 1;
-    } // Convert the exponent to multiple of three
+  var dbsliceFile = /*#__PURE__*/function () {
+    function dbsliceFile(file, requester) {
+      _classCallCheck(this, dbsliceFile); // How to load if file is an actual File object.
 
 
-    return Math.floor(exp / 3) * 3;
-  } // calculateExponent
+      if (typeof file == "string") {
+        file = {
+          url: file,
+          filename: file
+        };
+      } // if
+
+
+      this.url = file.url;
+      this.filename = file.filename;
+      this.extension = file.filename.split(".").pop();
+      this.promise = undefined; // Also log the requestor. If this was passed in then use the passed in value, otherwise the requestor is the user.
+
+      this.requester = requester ? requester : "unknown"; // Only dbslicefile interacts with errors. The errors are saved attached to the files that produced them. But they are saved separately in the library to both allow them to be reloaded when needed, and to be able to generate an error report for the user.
+
+      this.errors = [];
+    } // constructor
+
+
+    _createClass$1(dbsliceFile, [{
+      key: "load",
+      value: function load() {
+        // Collect the data and perform input testing.
+        var obj = this; // Based on the url decide how to load the file.
+
+        var loader;
+
+        switch (this.extension) {
+          case "csv":
+            loader = function loader(url) {
+              return d3$1.text(url).then(function (text) {
+                // Filter out any lines that begin with '#', and then parse the rest as csv.
+                var text_ = text.split("\n"); // Don't directly filter, but instead just remove lines until the first one without a '#'.
+
+                for (var i = 0; i < text_.length; i++) {
+                  if (text_[0].startsWith("#") || text_[0].startsWith("\"#")) {
+                    text_.splice(0, 1);
+                  } else {
+                    break;
+                  } // if
+
+                } // for
+
+
+                text_ = text_.join("\n");
+                return d3$1.csvParse(text_);
+              });
+            };
+
+            break;
+
+          /*
+          case "csv":
+          	loader = function(url){ return d3.csv(url) }
+          	break;
+          */
+
+          case "json":
+            loader = function loader(url) {
+              return d3$1.json(url);
+            };
+
+            break;
+
+          default:
+            // Return a rejected promise as the file extension is wrong.
+            loader = function loader() {
+              return Promise.reject(new Error("LoaderError: Unsupported Extension"));
+            };
+
+            break;
+        }
+        // Wrap in a larger promise that allows the handling of exceptions.
+
+        var loadPromise = new Promise(function (resolve, reject) {
+          // If the URL points to a non-existing file the d3 loader will reject the promise and throw an error, but still proceed down the resolve branch!
+          loader(obj.url).then(function (content) {
+            // Since d3 insists on running the resolve branch even though it doesn't find the file, handle missing contents here.
+            // csv files are always read as strings - convert numbers to numbers. Should be done here. If it's done in a preceeding promise then the error is lost.
+            obj.content = content;
+            resolve(obj);
+          }, function (e) {
+            // 'e' is an error triggered during loading.
+            // The two errors that can enter here are file missing, and a problem reading the file.
+            // This routes any errors that d3 might have into hte new promise.
+            reject(e);
+          });
+        }).then(this.format).then(this.onload)["catch"](function (e) {
+          // This catches all the rejects. 'e' is the field into which the error can be logged.
+          delete obj.content;
+          obj.errors.push(e);
+          return obj;
+        });
+        this.promise = loadPromise;
+      } // load
+
+    }, {
+      key: "onload",
+      value: function onload(obj) {
+        return obj;
+      } // onload
+
+    }, {
+      key: "format",
+      value: function format(obj) {
+        return obj;
+      } // format
+
+    }], [{
+      key: "testrow",
+      value: // test
+      // Maybe move these to helpers??
+      function testrow(array) {
+        if (array.length > 0) {
+          var i = Math.floor(Math.random() * array.length);
+          return {
+            i: i,
+            row: array[i]
+          }; // return
+        } else {
+          throw new Error("InvalidInput: Array without entries");
+        } // if
+
+      } // testrow
+
+    }, {
+      key: "convertNumbers",
+      value: function convertNumbers(array) {
+        return array.map(function (row) {
+          var r = {};
+
+          for (var k in row) {
+            r[k] = +row[k];
+
+            if (isNaN(r[k])) {
+              r[k] = row[k];
+            } // if
+
+          } // for
+
+
+          return r;
+        });
+      } // convertNumbers
+
+    }]);
+
+    return dbsliceFile;
+  }(); // dbsliceFile
+
+
+  dbsliceFile.test = {
+    structure: function structure(fileClass, content) {
+      // This an abstract test director. When a file is loaded the file classes do not know exactly how to handle to contents. This test director tries different implemented approaches to reformat the data, and stops when a suitable approach is found. In the future this may be extended to the point where the test involves performing a dummy plotting operation, as the plotting is the last operation to be performed on the file data.
+      var content_; // No differentiating between the structure or the content failing - the file classes are trying several different structures.
+      // Try to use all different file structures possible.
+
+      Object.getOwnPropertyNames(fileClass.structure).every(function (name) {
+        try {
+          content_ = fileClass.structure[name](content); // Return false breaks the loop. This return is reached only if the test was successfully performed and passed.
+
+          return content_ ? false : true;
+        } catch (e) {
+          // Keep looping
+          content_ = undefined;
+          return true;
+        } // try
+
+      }); // forEach
+
+      if (content_) {
+        // Restructuring succeeded.
+        return content_;
+      } else {
+        throw new Error("InvalidFile: Unsupported data structure");
+      } // if
+
+    } // structure
+
+  };
+
+  var line2dFile = /*#__PURE__*/function (_dbsliceFile) {
+    _inherits(line2dFile, _dbsliceFile);
+
+    var _super = _createSuper(line2dFile);
+
+    function line2dFile() {
+      _classCallCheck(this, line2dFile);
+
+      return _super.apply(this, arguments);
+    }
+
+    _createClass$1(line2dFile, [{
+      key: "format",
+      value: function format(obj) {
+        var content = dbsliceFile.test.structure(line2dFile, obj.content); // Rename the variables to remove leading and trailing blanks.			
+
+        obj.content = line2dFile.rename(content);
+        return obj;
+      } // format
+      // Structure should be testable outside as well, as it will have to be called bt onDemandFile when its trying to classify the files.
+
+    }], [{
+      key: "rename",
+      value: // test
+      function rename(content) {
+        // What happens if two names are the same after blanks have been trimmed? Retain the data, but add a modifier to the end.
+        var renamemap = content.variables.reduce(function (acc, oldname) {
+          var newname = oldname.trim();
+
+          if (oldname != newname) {
+            // Trimming changed something.
+            var allnames = Object.getOwnPropertyNames(acc);
+            var i = 0;
+
+            while (allnames.includes(newname)) {
+              newname += "_"; // Safety break
+
+              i += 1;
+
+              if (i > 10) {
+                break;
+              } // if
+
+            } // while
+
+
+            acc[oldname] = newname;
+          } // if
+
+
+          return acc;
+        }, {}); // reduce
+        // Rename the whole content.data array.
+
+        var namestoreplace = Object.getOwnPropertyNames(renamemap);
+        content.data.forEach(function (row) {
+          namestoreplace.forEach(function (oldname) {
+            var newname = renamemap[oldname];
+            row[newname] = row[oldname];
+            delete row[oldname];
+          });
+        });
+        content.variables = Object.getOwnPropertyNames(content.data[0]);
+        return content;
+      } // rename
+
+    }]);
+
+    return line2dFile;
+  }(dbsliceFile); // line2dFile
+
+
+  line2dFile.structure = {
+    csv2lineFile: function csv2lineFile(content) {
+      if (Array.isArray(content)) {
+        var content_ = {
+          variables: content.columns,
+          data: dbsliceFile.convertNumbers(content)
+        }; // Test the new contents.
+
+        line2dFile.test.content(content_); // Structure test succeeded. Delete the columns that accompany the array object.
+
+        delete content_.data.columns;
+        return content_;
+      } else {
+        return undefined;
+      } // if
+
+    },
+    // array
+    json2lineFile: function json2lineFile(content) {
+      if (Array.isArray(content.data)) {
+        var content_ = {
+          variables: Object.getOwnPropertyNames(content.data[0]),
+          data: content.data
+        }; // Test the new contents.
+
+        line2dFile.test.content(content_);
+        return content_;
+      } else {
+        return undefined;
+      } // if
+
+    } // object
+
+  };
+  line2dFile.test = {
+    content: function content(_content) {
+      if (_content.variables.length < 2) {
+        throw new Error("InvalidFile: No variable pair detected");
+      } // if
+      // All values MUST be numeric!
+
+
+      var testrow = dbsliceFile.testrow(_content.data);
+      var areAllContentsNumeric = Object.getOwnPropertyNames(testrow.row).every(function (varName) {
+        var value = testrow.row[varName];
+        return typeof value === 'number' && isFinite(value);
+      });
+
+      if (!areAllContentsNumeric) {
+        // There are non-numeric values in the data.
+        throw new Error("InvalidFile: Some variables include non-numeric values.");
+      } // if
+
+
+      return true;
+    } // content
+
+  };
+
+  var contour2dFile = /*#__PURE__*/function (_dbsliceFile) {
+    _inherits(contour2dFile, _dbsliceFile);
+
+    var _super = _createSuper(contour2dFile);
+
+    function contour2dFile() {
+      _classCallCheck(this, contour2dFile);
+
+      return _super.apply(this, arguments);
+    }
+
+    _createClass$1(contour2dFile, [{
+      key: "format",
+      value: function format(obj) {
+        obj.content = dbsliceFile.test.structure(contour2dFile, obj.content);
+        return obj;
+      } // format
+      // structure
+
+    }]);
+
+    return contour2dFile;
+  }(dbsliceFile); // contour2dFile
+
+
+  contour2dFile.structure = {
+    // This can now more easily handle different ways of specifying contours. Also convenient to implement the data structure conversion here, e.g. from points to triangles.
+    json2contour2dFile: function json2contour2dFile(content) {
+      // Not supposed to be an array! It should contain a single surface. If content.surfaces IS an array, then just select the first one.
+      var surface = Array.isArray(content.surfaces) ? content.surfaces[0] : content.surfaces; // In the content I expect an array called `y', `x', `v' (or others), and `size'. The first three must all be the same length, and the last one must have 2 numbers.
+
+      var L = surface.x.length == surface.y.length && surface.x.length > 3 ? surface.x.length : undefined; // Find all possible variables. The variables are deemed available if they are the same length as the x and y arrays. Also, they must contain only numeric values.
+
+      var compulsory = ["x", "y", "size"];
+      var variables = Object.getOwnPropertyNames(surface).filter(function (d) {
+        var L_;
+
+        if (!compulsory.includes(d)) {
+          // This is a possible user variable. It fits if it is an array of the same length as the geometrical parameters, and if it has numeric values.
+          var vals = surface[d];
+          L_ = Array.isArray(vals) && !vals.some(isNaN) ? vals.length : undefined;
+        } else {
+          L_ = undefined;
+        } // if
+        // The particular variable has to be an array of exactly the same length as `x' and `y'.
+
+
+        return L_ == L;
+      }); // Variables must have at least one option.
+
+      var content_;
+
+      if (variables.length > 0) {
+        content_ = {
+          variables: variables,
+          surface: surface
+        };
+      } else {
+        throw new Error("InvalidFile: Unsupported data structure");
+      } // if
+      // Hard-coded expected contents
+
+
+      return content_;
+    } // object
+
+  };
+
+  var onDemandFile = /*#__PURE__*/function (_dbsliceFile) {
+    _inherits(onDemandFile, _dbsliceFile);
+
+    var _super = _createSuper(onDemandFile);
+
+    function onDemandFile() {
+      _classCallCheck(this, onDemandFile);
+
+      return _super.apply(this, arguments);
+    }
+
+    _createClass$1(onDemandFile, [{
+      key: "onload",
+      value: function onload(obj) {
+        // During the data formatting the format of the file is determined already. Here just report it onwards.
+        return obj;
+      } // onload
+
+    }, {
+      key: "format",
+      value: function format(obj) {
+        // Here try all different ways to format the data. If the formatting succeeds, then check if the contents are fine.
+        var availableFileClasses = [line2dFile, contour2dFile]; // Here just try to fit the data into all hte supported data formats, and see what works.
+
+        var format;
+        availableFileClasses.every(function (fileClass) {
+          try {
+            // The structure test will throw an error if the content cannot be handled correctly.
+            dbsliceFile.test.structure(fileClass, obj.content); // This file class can handle the data.
+
+            format = fileClass.name;
+          } catch (_unused) {
+            return true;
+          } // if
+
+        }); // Output the object, but add it's format to the name.
+
+        if (format) {
+          obj.content.format = format;
+          return obj;
+        } else {
+          throw new Error("InvalidFile: Unsupported data structure");
+        } // if
+
+      } // format
+      // test
+
+    }]);
+
+    return onDemandFile;
+  }(dbsliceFile); // onDemandFile
+
+
+  onDemandFile.test = {
+    content: function content() {
+      // Any content that can be loaded and passes through the format testing is a valid on-demand file.
+      return true;
+    } // content
+
+  };
+
+  var supportedVariableTypes = {
+    string: {
+      supportedCategories: {
+        string: ["categorical"],
+        datetime: ["categorical", "ordinal"],
+        line2dFile: ["categorical", "line2dFile"],
+        contour2dFile: ["categorical", "contour2dFile"]
+      },
+      test: function test(variable, testval, filename) {
+        // `variable' needs to be the first input!
+        // Return a promise or a fully classified variable.
+        var testobj = this;
+
+        switch (testval.split(".").pop()) {
+          case "json":
+          case "csv":
+            // The requester is the metadata file for which the variables are being classified.					
+            return testobj.testAsFile(variable, testval, filename);
+
+          default:
+            // Unsupported extension - treat as a regular string. A string could be a date.	
+            return testobj.testAsDatetime(variable, testval);
+        } // switch
+
+      },
+      // test
+      defaultclassification: function defaultclassification(variable) {
+        var testobj = this;
+        variable.category = "categorical";
+        variable.type = "string";
+        variable.supportedTypes = ["string"];
+        variable.supportedCategories = testobj.supportedCategories["string"];
+        return variable;
+      },
+      // defaultclassification
+      testAsFile: function testAsFile(variable, testval, requester) {
+        // Return fully classified variable object.
+        var testobj = this; // Make a testfile object to load the content.
+
+        var testFile = new onDemandFile({
+          url: testval,
+          filename: testval
+        }, requester);
+        testFile.load(); // Why Promise.all ??
+        // Below 'fileobj' represents 'testFile'.
+
+        return Promise.all([testFile.promise]).then(function (fileobj) {
+          // It's possible that hte file was found and loaded correctly. In that case 'obj.content.format' will contain the name of the file type. Otherwise this field will not be accessible.
+          try {
+            // Category is the categorisation that will actually be used, and type cannot be changed.
+            var fileformat = fileobj[0].content.format;
+            variable.category = fileformat;
+            variable.type = fileformat;
+            variable.supportedTypes = ["string", fileformat];
+            variable.supportedCategories = testobj.supportedCategories[variable.category];
+            return variable;
+          } catch (_unused) {
+            // If the loading failed for whatever reason the variable is retained as a categorical.
+            return testobj.defaultclassification(variable);
+          } // try
+
+        }); // Promise.all().then
+      },
+      // testAsFile
+      testAsDatetime: function testAsDatetime(variable, testval) {
+        // But for datetimes it's possible that the row will have mixed formats. In that case it's only fair to allow the variable to be used as a date if all the values can be converted no? Leave as is for now, the others should just return as null, and then that can be handled upon drawing.
+        var testobj = this;
+        var testdate = testobj.string2datetime(testval);
+
+        if (testdate) {
+          variable.category = "ordinal";
+          variable.type = "datetime";
+          variable.supportedTypes = ["number", "datetime"];
+          variable.supportedCategories = testobj.supportedCategories["datetime"];
+        } else {
+          testobj.defaultclassification(variable);
+        } // if
+
+
+        return variable;
+      },
+      // testAsDatetime
+      string2datetime: function string2datetime(testval) {
+        /* FORMAT DESIGNATORS
+        SECOND
+        	%f - microseconds as a decimal number [000000, 999999].
+        	%L - milliseconds as a decimal number [000, 999].
+        	%Q - milliseconds since UNIX epoch.
+        	%s - seconds since UNIX epoch.
+        	%S - second as a decimal number [00,61].
+        		MINUTE
+        	%M - minute as a decimal number [00,59].
+        		HOUR
+        	%H - hour (24-hour clock) as a decimal number [00,23].
+        	%I - hour (12-hour clock) as a decimal number [01,12].
+        	%p - either AM or PM.*
+        		DAY
+        	%a - abbreviated weekday name.*
+        	%A - full weekday name.*
+        	%j - day of the year as a decimal number [001,366].
+        	%d - zero-padded day of the month as a decimal number [01,31].
+        	%e - space-padded day of the month as a decimal number [ 1,31];
+        	%u - Monday-based (ISO 8601) weekday as a decimal number [1,7].
+        	%w - Sunday-based weekday as a decimal number [0,6].
+        		WEEK
+        	%U - Sunday-based week of the year as a decimal number [00,53].
+        	%W - Monday-based week of the year as a decimal number [00,53].
+        	%V - ISO 8601 week of the year as a decimal number [01, 53].
+        		MONTH
+        	%b - abbreviated month name.*
+        	%B - full month name.*
+        	%m - month as a decimal number [01,12].
+        		QUARTER
+        	%q - quarter of the year as a decimal number [1,4].
+        		YEAR
+        	%g - ISO 8601 week-based year without century as a decimal number [00,99].
+        	%G - ISO 8601 week-based year with century as a decimal number.
+        	%y - year without century as a decimal number [00,99].
+        	%Y - year with century as a decimal number, such as 1999.
+        		MISC
+        	%Z - time zone offset, such as -0700, -07:00, -07, or Z.
+        	%% - a literal percent sign (%).
+        			%c - the locale’s date and time, such as %x, %X.*
+        	%x - the locale’s date, such as %-m/%-d/%Y.*
+        	%X - the locale’s time, such as %-I:%M:%S %p.*
+        */
+        // Four digit year format will successfully read a two digit year input string. Instead of setting bounds on the date just make sure the 2-digit-year format (%y) is tried before the 4-digit-year format (%Y).
+        var supportedDatetimeFormats = ["%d/%m/%y", "%d-%m-%y", "%d.%m.%y", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y"];
+        var datetime = null; // Can't break out of a forEach... Iterating for(let format in ...) returned the index instead of the string value...
+
+        for (var i = 0; i < supportedDatetimeFormats.length; i++) {
+          var format = supportedDatetimeFormats[i];
+          var t = d3.timeParse(format);
+          datetime = t(testval); // Dates that only have two digits to denote the year are automatically set to the latest year with those two ending digits by d3.timeParse.
+
+          if (datetime) {
+            break;
+          }
+        } // for
+
+
+        return datetime;
+      } // string2datetime
+
+    },
+    // string
+    number: {
+      test: function test(variable) {
+        variable.category = "ordinal";
+        variable.type = "number";
+        variable.supportedTypes = ["number"];
+        variable.supportedCategories = ["ordinal", "categorical"];
+        return variable;
+      } // test
+
+    } // number
+
+  }; // supportedVariableTypes
+  // Maybe I can even move the structure outside here, and remove the need for the static variable?
+  // Maybe move the tests outside?
+
+  var metadataFile = /*#__PURE__*/function (_dbsliceFile) {
+    _inherits(metadataFile, _dbsliceFile);
+
+    var _super = _createSuper(metadataFile);
+
+    function metadataFile() {
+      _classCallCheck(this, metadataFile);
+
+      return _super.apply(this, arguments);
+    }
+
+    _createClass$1(metadataFile, [{
+      key: "onload",
+      value: function onload(obj) {
+        // This executes in a promise chain, therefore the overhead promise will wait until thiss is fully executed.
+        // The classification is forced now, as categories data is not used anymore. To ensure that the classification is included into the loading promise chain a promise must be returned here. This promise MUST return obj. 'classify.all' returns a promise, which returns the object with the classified variables.
+        var classificationPromise = obj.classifyvariables();
+        return classificationPromise;
+      } // onload
+
+    }, {
+      key: "format",
+      value: function format(obj) {
+        // Restructure the data into an expected format
+        obj.content = dbsliceFile.test.structure(metadataFile, obj.content);
+        return obj;
+      } // format
+
+    }, {
+      key: "classifyvariables",
+      value: // structure
+      function classifyvariables() {
+        var obj = this; // This already executes in a promise chain, therefore it's not needed to update the obj.promise. The promises created here will be resolved before the overhead promise resolves further.
+        // Create all the testing promises.
+
+        var testPromises = obj.content.variables.map(function (variable) {
+          // Check this column. Variable is now an object!
+          return obj.makeVariableClassificationPromise(obj.filename, obj.content.data, variable);
+        }); // map
+        // Return the final promise.
+
+        return Promise.all(testPromises).then(function (variableClassification) {
+          // The promises update the variable classification into the file object directly.
+          // After teh classification is complete some other actions can be taken to ease interaction with the data further along the visualisation pipeline.
+          obj.content.variables.forEach(function (variable) {
+            // If any variables have been identified as datetypes, then convert them all to datetypes here to save the hassle for later.
+            if (variable.supportedTypes.includes("datetime")) {
+              obj.content.data.forEach(function (row) {
+                row[variable.name] = supportedVariableTypes.string.string2datetime(row[variable.name]);
+              }); // forEach
+            } // if
+            // After the classification it is handy to have access to the extents of ordinal variables.
+
+
+            if (variable.category == "ordinal") {
+              variable.extent = d3.extent(obj.content.data, function (row) {
+                return row[variable.name];
+              });
+            } // if
+
+          }); // forEach
+
+          return obj;
+        });
+      } // classifyvariables
+
+    }, {
+      key: "makeVariableClassificationPromise",
+      value: function makeVariableClassificationPromise(filename, data, variable) {
+        // Retrieve an actual value already.
+        var testrow = dbsliceFile.testrow(data);
+        var testval = testrow.row[variable.name]; // Split the testing as per the variable type received.
+
+        var testobj = supportedVariableTypes[_typeof(testval)];
+
+        if (testobj) {
+          return testobj.test(variable, testval, filename);
+        } else {
+          // For any variables without dedicated support.
+          variable.category = "unused";
+          variable.type = undefined;
+          variable.supportedTypes = [];
+          variable.supportedCategories = [];
+          return variable;
+        } // if
+
+      } // makeVariableClassificationPromise
+      // The testing suite for this file type.
+      // test
+
+    }]);
+
+    return metadataFile;
+  }(dbsliceFile); // metadataFile
+
+
+  metadataFile.structure = {
+    csv2metadataFile: function csv2metadataFile(content) {
+      var content_; // Data values need to be converted to numbers. Convert the 'variables' into objects?
+
+      content_ = {
+        variables: content.columns.map(function (d) {
+          return {
+            name: d,
+            category: undefined,
+            type: undefined,
+            nunique: unique$1(content.map(function (row) {
+              return row[d];
+            })).length,
+            n: content.length
+          };
+        }),
+        data: dbsliceFile.convertNumbers(content)
+      };
+      metadataFile.test.content(content_);
+      delete content_.data.columns;
+      return content_;
+    },
+    // array
+    json2metadataFile: function json2metadataFile(content) {
+      var content_;
+      content_ = {
+        variables: Object.getOwnPropertyNames(dbsliceFile.testrow(content.data).row).map(function (d) {
+          return {
+            name: d,
+            category: undefined,
+            type: undefined
+          };
+        }),
+        data: content.data
+      }; // content_
+
+      metadataFile.test.content(content_);
+      return content_;
+    } // object
+
+  };
+  metadataFile.test = {
+    content: function content(_content) {
+      // Columns require a taskId property.
+      // Declared categories must contain all variables.
+      // All rows must be the same lenght
+      // There must be some rows.
+      // Data must be iterable
+      // Check if the data is an array (has function length)
+      var isThereAnyData = Array.isArray(_content.data) && _content.data.length > 0; // Test to make sure all rows have the same number of columns.
+
+      var areRowsConsistent = true;
+      var testrow = dbsliceFile.testrow(_content.data).row;
+
+      _content.data.forEach(function (row) {
+        arrayEqual(Object.getOwnPropertyNames(testrow), Object.getOwnPropertyNames(row));
+      }); // forEach
+
+
+      return isThereAnyData && areRowsConsistent;
+    } // content
+
+  };
+
+  // A = new dragdiv() ...
+
+  var dragnode = /*#__PURE__*/function () {
+    function dragnode(wrapper, handle) {
+      _classCallCheck(this, dragnode); // Allow both a handle and a wrapper nodes to be passed in? The handle is applied the draggable behaviour, and the wrapper has its position updated? If tehre is no wrapper the handle is the wrapper?
+
+
+      var obj = this;
+
+      if (!handle) {
+        handle = wrapper;
+      } // if
+
+
+      obj.node = wrapper;
+      obj.d3handle = select(handle);
+      obj.d3wrapper = select(wrapper);
+      obj.d3wrapper.style("position", "relative").style("left", 0 + "px").style("top", 0 + "px"); // Container that will hold the mouse coordinates.
+
+      obj.mouseorigin = {};
+      obj.apply();
+    } // constructor
+
+
+    _createClass$1(dragnode, [{
+      key: "apply",
+      value: function apply() {
+        var obj = this; // Apply dragging to it. Store the movement data on the dragdiv object instead? So as to not pollute the actual object?
+
+        var dragobj = drag().on("start", function (event) {
+          obj.mouseorigin = obj.mouseposition(event);
+          obj.onstart();
+        }).on("drag", function (event) {
+          // let position = obj.position()
+          var movement = obj.movement(event); // Rounding positions to full pixel value hasn't helped much. Maybe it's the css holding everything back?
+          // Move the wrapper.
+
+          obj.d3wrapper.style("left", obj.position.x + movement.x + "px").style("top", obj.position.y + movement.y + "px"); // Update the last mouse position
+
+          obj.mouseorigin = obj.mouseposition(event);
+          obj.ondrag();
+        }).on("end", function (event) {
+          // The parent should update it's position automatically. How do I do that? Maybe the parent should listen to some action? Or maybe it's position should just be calculated when it's needed?
+          obj.onend();
+        });
+        obj.d3handle.call(dragobj);
+      } // apply
+
+    }, {
+      key: "position",
+      get: function get() {
+        // Get the position of the dragdiv.
+        var obj = this;
+        return {
+          x: parseInt(obj.node.style.left),
+          y: parseInt(obj.node.style.top),
+          w: obj.node.offsetWidth,
+          h: obj.node.offsetHeight
+        };
+      } // position
+
+    }, {
+      key: "movement",
+      value: function movement(event) {
+        // Get the delta of the movement from hte origin to the current mouse position.
+        var obj = this;
+        var origin = obj.mouseorigin;
+        var current = obj.mouseposition(event);
+        return {
+          x: current.x - origin.x,
+          y: current.y - origin.y
+        };
+      } // movement
+
+    }, {
+      key: "mouseposition",
+      value: function mouseposition(event) {
+        return {
+          x: event.sourceEvent.clientX,
+          y: event.sourceEvent.clientY
+        };
+      } // mouseposition
+      // Dummy functionality.
+
+    }, {
+      key: "onstart",
+      value: function onstart() {
+      } // onstart
+
+    }, {
+      key: "ondrag",
+      value: function ondrag() {
+      } // ondrag
+
+    }, {
+      key: "onend",
+      value: function onend() {
+      } // onend
+
+    }]);
+
+    return dragnode;
+  }(); // dragdiv
 
   var niceErrors = {
     0: "Invalid value for configuration 'enforceActions', expected 'never', 'always' or 'observed'",
@@ -8905,6 +10348,121 @@
     });
   }
 
+  var css = {
+    card: "\n\t  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);\n\t  position: relative;\n\t  left: 0px;\n\t  top: 0px;\n\t  display: inline-block;\n\t",
+    cardHeader: "\n\t  width: 100%;\n\t  background-color: gainsboro;\n\t  cursor: grab;\n\t  display: inline-block;\n\t",
+    plotTitle: "\n\t  width: 80%;\n      overflow: hidden; \n      white-space: nowrap; \n      text-overflow: ellipsis;\n\t  display: inline-block;\n\t  cursor: text;\n\t  margin: 8px 0px 0px 4px;\n\t",
+    // Buttons
+    btn: "\n\t  border: none;\n\t  border-radius: 12px;\n\t  text-align: center;\n\t  text-decoration: none;\n\t  display: inline-block;\n\t  font-size: 20px;\n\t  margin: 4px 2px;\n\t  cursor: pointer;\n    ",
+    btnSubmit: "\n\t  background-color: mediumSeaGreen; \n\t  color: white;\n    ",
+    btnDanger: "\n\t  background-color: crimson;\n\t  color: white;\n\t  float: right;\n    "
+  }; // css
+
+  var template$3 = "\n\t<div style=\"".concat(css.card, "\">\n\t\t<div class=\"card-header\" style=\"").concat(css.cardHeader, "\">\n\t\t\t<h4 class=\"card-title\" spellcheck=\"false\" contenteditable=\"true\" style=\"").concat(css.plotTitle, "\">This is a new plot.</h4>\n\t\t\t\n\t\t\t<button class=\"close\" style=\"").concat(css.btn + css.btnDanger, "\">x</button>\n\t\t</div>\n\t\t\n\t\t<div class=\"card-body\">\n\t\t\n\t\t</div>\n\t</div>\n"); // template
+
+  var dbsliceCrossfilterPlot = /*#__PURE__*/function (_dragnode) {
+    _inherits(dbsliceCrossfilterPlot, _dragnode);
+
+    var _super = _createSuper(dbsliceCrossfilterPlot);
+
+    function dbsliceCrossfilterPlot(configobj) {
+      var _this;
+
+      _classCallCheck(this, dbsliceCrossfilterPlot);
+      /*
+      - Should have access to the current crossfilter selection.
+      - Access to the `variables' array.
+      - Access to a uniform `color' object for coordination.
+      
+      To instantiate the template should be converted to node, the basic interactivity should be added.
+      
+      Ah, how should the drag work? It should work only when the header is grabbed. This allows other drag-and-drop gestures to be performed on hte plot, e.g. panning.
+      
+      The link between node and data should be maintained -> when I click on the remove plot it will need access to the background object to allow it to be removed from storage. Have a `isDeleted' flag to allow the `sessionManager' to remove unnecessary plots?
+      
+      The filtering interactions will also need to be mobx actions. The actions can then only be stored on the object itself. The `sessionManager' will have to listen to those objects at specific points (`filterSelection'?) and transfer that to the actual filter object. It should also transfer information from the filter to the plots - if we have two plots of the same variable, and the filter is updated by one the other should update also, right?
+      
+      Offspring classes will have to limit the variables they can plot. So the next level will be `dbsliceCategoricalPlot`, `dbsliceOrdinalPlot`, and `dbsliceOnDemandPlot`.
+      
+      For `dbsliceOnDemandPlot` a special data access functionality should be created - maybe we can get rid of relying on a button if the data is loaded in sequence. That should throttle the loading and maintain interactiveness.
+      */
+      // Instantiate a completely new element.
+
+
+      var wrapper = html2element(template$3); // The dragging should only be available through the header.
+
+      _this = _super.call(this, wrapper, wrapper.querySelector("div.card-header"));
+
+      var obj = _assertThisInitialized$1(_this); // Title editing.	
+
+
+      obj.titleElement.addEventListener("mousedown", function (evnt) {
+        evnt.stopPropagation();
+      }); // Flag to let a session manager know whether to keep this in the collection or not. It's possible that is the plots are chained together (as in Alistairs application), that subsequent plots will either have to be updated (maybe just to show that an input is missing - maybe by coloring hte axis label red?)
+
+      obj.active = true; // Removal.
+
+      obj.node.querySelector("button.close").addEventListener("click", function () {
+        obj.remove();
+      }); // Setup with the user provided inputs.
+
+      obj.config = configobj; // Declare the mobx observable stuff. active must be observable, and remove must be an action. Nothing else is requried here I think.
+
+      makeObservable(obj, {
+        active: observable,
+        remove: action
+      });
+      return _this;
+    } // constructor
+
+
+    _createClass$1(dbsliceCrossfilterPlot, [{
+      key: "remove",
+      value: function remove() {
+        var obj = this;
+        obj.active = false;
+      } // remove
+
+    }, {
+      key: "titleElement",
+      get: function get() {
+        return this.node.querySelector("h4.card-title");
+      } // titleElement
+
+    }, {
+      key: "config",
+      get: // config
+      function get() {
+        var obj = this;
+        /*
+        	plot type
+        	title
+        	variables selected - not defined here!
+        */
+
+        return {
+          plottype: obj.constructor.name,
+          title: obj.titleElement.innerText
+        };
+      } // config
+      ,
+      set: function set(configobj) {
+        var obj = this;
+
+        if (configobj) {
+          if (typeof configobj.title == "string") {
+            obj.titleElement.innerText = configobj.title;
+          } // if
+
+        } // if
+
+      }
+    }]);
+
+    return dbsliceCrossfilterPlot;
+  }(dragnode);
+   // dbsliceCrossfilterPlot
+
   /* I want to support:
    - linear		: scaleLinear
    - logarithmic	: scaleLog - must not cross 0!!
@@ -8919,14 +10477,14 @@
 
   var textattributes = "fill=\"black\" font-size=\"10px\" font-weight=\"bold\""; // text -> x="-8" / y="-0.32em"
 
-  var template$1 = "\n\t<g class=\"graphic\"></g>\n\t<g class=\"exponent\">\n\t\t<text ".concat(textattributes, ">\n\t\t\t<tspan>\n\t\t\t  x10\n\t\t\t  <tspan class=\"exp\" dy=\"-5\"></tspan>\n\t\t\t</tspan>\n\t\t</text>\n\t</g>\n\t<g class=\"controls\">\n\t\t<text class=\"plus hover-highlight\" ").concat(textattributes, ">+</text>\n\t\t<text class=\"minus hover-highlight\" ").concat(textattributes, ">-</text>\n\t</g>\n"); // The exponent should be replaced with the logarithmic controls if the axis switches from linear to log.
+  var template$2 = "\n\t<g class=\"graphic\"></g>\n\t<g class=\"exponent\">\n\t\t<text ".concat(textattributes, ">\n\t\t\t<tspan>\n\t\t\t  x10\n\t\t\t  <tspan class=\"exp\" dy=\"-5\"></tspan>\n\t\t\t</tspan>\n\t\t</text>\n\t</g>\n\t<g class=\"controls\">\n\t\t<text class=\"plus hover-highlight\" ").concat(textattributes, ">+</text>\n\t\t<text class=\"minus hover-highlight\" ").concat(textattributes, ">-</text>\n\t</g>\n"); // The exponent should be replaced with the logarithmic controls if the axis switches from linear to log.
   // Now I need to add in a label saying linear/log
   // DONE!! Maybe a plus/minus next to the axes to increase the axis limits - instead of dragging the labels.
-  // Also need zoom + pan: first do this one.
+  // Maybe it'd be better
 
   var ordinalAxis = /*#__PURE__*/function () {
     // These margins are required to completely fit the scales along with their labels, ticks and domain lines onto the plot.
-    function ordinalAxis(axis, plotbox, initdomain) {
+    function ordinalAxis(axis, plotbox, initvariable, ordinalvariables) {
       _classCallCheck(this, ordinalAxis);
 
       this.type = "linear";
@@ -8937,15 +10495,18 @@
         bottom: 40,
         left: 40
       };
-      /* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `initdomain' is the initial domain into which the data should be visualised. */
+      /* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `ordinalvariable' is a dbslice ordinal variable which is paired with this axis. */
 
-      var obj = this;
+      var obj = this; // Get rid of axis by abstracting?
+
       obj.axis = axis;
       obj.setplotbox(plotbox);
-      obj.setdomain(initdomain); // When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
+      obj.variable = initvariable;
+      obj.variableoptions = ordinalvariables;
+      obj.setdomain(initvariable.extent); // When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
       // The vertical position of the axis doesn't actually depend on the range. The y-position for the x axis should be communicated from outside. The axis should always get the x and y dimesnion of the svg we're placing it on.
 
-      obj.d3node = create$1("svg:g").attr("class", "axis").html(template$1); // Add the functionality to the domain change.
+      obj.d3node = create$1("svg:g").attr("class", "axis").html(template$2); // Add the functionality to the domain change.
 
       var controls = obj.d3node.select("g.controls");
       controls.select("text.plus").on("click", function () {
@@ -9126,8 +10687,10 @@
   exponent  : power exponent (big number labels may overlap otherwise)
   */
 
-  var template = "\n\t<svg class=\"plot-area\">\n\t\t\n\t\t<g class=\"background\">\n\t\t\t<clipPath>\n\t\t\t\t<rect></rect>\n\t\t\t</clipPath>\n\t\t\t\n\t\t\t<rect class=\"zoom-area\" fill=\"rgb(255, 25, 255)\"></rect>\n\t\t\t\n\t\t\t<g class=\"tooltip-anchor\">\n\t\t\t\t<circle class=\"anchor-point\" r=\"1\" opacity=\"0\"></circle>\n\t\t\t</g>\n\t\t</g>\n\t\t\n\t\t<g class=\"data\"></g>\n\t\t<g class=\"markup\"></g>\n\t\t\n\t\t\n\t</svg>\n"; // The axis scale needs to have access to the data and to the svg dimensions.
-  // Start thinking about integrating this one within dbsliceOrdinalPlot.
+  var template$1 = "\n\t<svg class=\"plot-area\" width=\"400\" height=\"400\">\n\t\t\n\t\t<g class=\"background\">\n\t\t\t<clipPath>\n\t\t\t\t<rect></rect>\n\t\t\t</clipPath>\n\t\t\t\n\t\t\t<rect class=\"zoom-area\" fill=\"rgb(255, 25, 255)\"></rect>\n\t\t\t\n\t\t\t<g class=\"tooltip-anchor\">\n\t\t\t\t<circle class=\"anchor-point\" r=\"1\" opacity=\"0\"></circle>\n\t\t\t</g>\n\t\t</g>\n\t\t\n\t\t<g class=\"data\"></g>\n\t\t<g class=\"markup\"></g>\n\t\t\n\t\t\n\t</svg>\n"; // The axis scale needs to have access to the data and to the svg dimensions. Actually not access to the data, but access to the data extent. This has been solved by adding calculated extents to the variable objects.
+  // It's best to just pass all the variables to the axis, and let it handle everything connected to it. 
+  // This class is a template for two interactive axes svg based plotting.
+  // WILL HOLD THE ZOOM + PAN THOUGH!!!.
 
   var twoInteractiveAxesInset = /*#__PURE__*/function () {
     // Generally I'll need variables to select from, and data that needs to be plotted.
@@ -9136,29 +10699,20 @@
     	The name of the selected variable
     	The scale to operate with
     */
-    function twoInteractiveAxesInset() {
+    function twoInteractiveAxesInset(variables) {
       _classCallCheck(this, twoInteractiveAxesInset);
 
       this.variables = [];
-      this.data = [];
       this.width = 400;
       this.height = 400; // What should this one get?
 
       var obj = this;
-      obj.node = html2element(template); // `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
+      obj.node = html2element(template$1); // `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
 
-      obj.y = new ordinalAxis("y", obj.plotbox, [0, 1]);
-      obj.x = new ordinalAxis("x", obj.plotbox, [0, 1]);
+      obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
+      obj.x = new ordinalAxis("x", obj.plotbox, variables[1], variables);
       obj.node.appendChild(obj.y.d3node.node());
-      obj.node.appendChild(obj.x.d3node.node()); // Make it run automatically when new data becomes available.
-
-      makeObservable(obj, {
-        data: observable,
-        adddata: action
-      });
-      autorun(function () {
-        obj.draw();
-      });
+      obj.node.appendChild(obj.x.d3node.node());
     } // constructor
 
 
@@ -9175,28 +10729,6 @@
       } // update
 
     }, {
-      key: "draw",
-      value: function draw() {
-        // Draw all the tasks onto the plot.
-        var obj = this;
-        select(obj.node).select("g.data").selectAll("circle").data(obj.data).join(function (enter) {
-          return enter.append("circle").attr("r", 5).attr("fill", "cornflowerblue").attr("cx", function (d) {
-            return obj.x.scale(d.sepal_length);
-          }).attr("cy", function (d) {
-            return obj.y.scale(d.sepal_width);
-          });
-        }, function (update) {
-          return update.attr("cx", function (d) {
-            return obj.x.scale(d.sepal_length);
-          }).attr("cy", function (d) {
-            return obj.y.scale(d.sepal_width);
-          });
-        }, function (exit) {
-          return exit.remove();
-        });
-      } // draw
-
-    }, {
       key: "plotbox",
       get: function get() {
         // Specify the area of the svg dedicated to the plot. In this case it'll be all of it. The margin determines the amount of whitespace around the plot. This whitespace will NOT include the axis labels etc.
@@ -9206,71 +10738,132 @@
           right: 0,
           bottom: 0,
           left: 0
-        };
-        var svgrect = obj.node.getBoundingClientRect();
+        }; // If the inset was not yet attached the getBoundingClientRect will return an empty rectangle. Instead, have this inset completely control the width and height of hte svg.
+        // let svgrect = obj.node.getBoundingClientRect();
+
         var plot = {
-          x: [margin.left, svgrect.width - margin.left - margin.right],
-          y: [margin.top, svgrect.height - margin.top - margin.bottom]
+          x: [margin.left, obj.width - margin.left - margin.right],
+          y: [margin.top, obj.height - margin.top - margin.bottom]
         };
         return plot;
       } // plotbox
-      // Shouldn't this be moved to the plot??
 
-    }, {
-      key: "adddata",
-      value: function adddata(content) {
-        // When new data is given to the plots they should update.
-        this.data = content.data;
-        this.variables = content.variables; // Pick an x and y variable.
-
-        this.xvariable = content.variables[0];
-        this.yvariable = content.variables[1];
-        this.x.setdomain(extent(content.data, function (d) {
-          return d.sepal_length;
-        }));
-        this.y.setdomain(extent(content.data, function (d) {
-          return d.sepal_width;
-        }));
-      }
     }]);
 
     return twoInteractiveAxesInset;
   }(); // twoInteractiveAxesInset
 
-  function convertNumbers(array) {
-    return array.map(function (row) {
-      var r = {};
+  /* Alistairs application will require a scatter plot, so I'll make a scatter inset. That will be reusable when I make the AIDE application.
+  		
+  		
+  	Ordinal
+  	Scatter:
+  		both axis should have stretchable/scaleable axes + zoom
+  		should ideally be on a canvas.
+  		
+  	Histogram:
+  		only y axis should be scaleable
+  		
+  	Categorical
+  	Bar:
+  		only x axis should be scaleable
+  	
+  	On-demand
+  	Line: Same as scatter plot
+  	Small multiple( Contour 2D, 3D, Geometry 2D, 3D, image)
+  	
+  	
+  */
+  // The template can now hold one inset per div let's say. Maybe here I want to include a modelInputVariableSelectionInset and a twoInteractiveAxesInset. The drawing on the svg should be implemented here.
 
-      for (var k in row) {
-        r[k] = +row[k];
+  var template = "\n<div>\n\t<div class=\"model-variable-selection\"></div>\n\t<div class=\"scatterplot\"></div>\n</div>\n"; // Since the axes manage all the interactivity with variables the plot must use them to access the data to plot.
 
-        if (isNaN(r[k])) {
-          r[k] = row[k];
-        } // if
+  var dbsliceScatterPlot = /*#__PURE__*/function (_dbsliceCrossfilterPl) {
+    _inherits(dbsliceScatterPlot, _dbsliceCrossfilterPl);
 
-      } // for
+    var _super = _createSuper(dbsliceScatterPlot);
 
+    function dbsliceScatterPlot(content, configobj) {
+      var _this;
 
-      return r;
-    });
-  } // convertNumbers
+      _classCallCheck(this, dbsliceScatterPlot); // `content` still has both metadata in `data`, and variables in `variables`.
 
 
-  var plotContainer = document.getElementById("plot-container"); // Make an inset, and attach it to a plot.
+      _this = _super.call(this, configobj);
 
-  var plot = new twoInteractiveAxesInset();
-  plotContainer.appendChild(plot.node);
-  plot.update();
-  console.log(plot); // Work on just developing the twoaxis inset here.
+      var obj = _assertThisInitialized$1(_this); // Temporary!!! Ultimaltely this will have to be connected to the filter.
 
-  d3.csv("./_data/iris_data.csv").then(function (content) {
-    return {
-      data: convertNumbers(content),
-      variables: content.columns
-    };
-  }).then(function (content) {
-    plot.adddata(content);
-  });
+
+      obj.content = content; // Append the scatter plot backbone.
+
+      var container = obj.node.querySelector("div.card-body");
+      container.appendChild(html2element(template)); // Add a scatterplot inset. When initialising already pass in the size of the card.
+
+      obj.svgobj = new twoInteractiveAxesInset(content.variables);
+      container.querySelector("div.scatterplot").appendChild(obj.svgobj.node);
+      autorun(function () {
+        obj.draw();
+      });
+      return _this;
+    } // constructor
+
+    /*
+    // Shouldn't this be moved to the plot??
+    adddata(content){
+    	// When new data is given to the plots they should update.
+    	this.data = content.data;
+    	this.variables = content.variables;
+    	
+    	// Pick an x and y variable.
+    	this.xvariable = content.variables[0];
+    	this.yvariable = content.variables[1];
+    	
+    	this.x.setdomain(d3.extent(content.data, d=>d.sepal_length))
+    	this.y.setdomain(d3.extent(content.data, d=>d.sepal_width))
+    }
+    */
+    // It all works now!!
+
+
+    _createClass$1(dbsliceScatterPlot, [{
+      key: "draw",
+      value: function draw() {
+        // Draw all the tasks onto the plot.
+        var obj = this;
+        var xaxis = obj.svgobj.x;
+        var yaxis = obj.svgobj.y;
+        d3.select(obj.node).select("g.data").selectAll("circle").data(obj.content.data).join(function (enter) {
+          return enter.append("circle").attr("r", 5).attr("fill", "cornflowerblue").attr("cx", function (d) {
+            return xaxis.scale(d[xaxis.variable.name]);
+          }).attr("cy", function (d) {
+            return yaxis.scale(d[yaxis.variable.name]);
+          });
+        }, function (update) {
+          return update.attr("cx", function (d) {
+            return xaxis.scale(d[xaxis.variable.name]);
+          }).attr("cy", function (d) {
+            return yaxis.scale(d[yaxis.variable.name]);
+          });
+        }, function (exit) {
+          return exit.remove();
+        });
+      } // draw
+
+    }]);
+
+    return dbsliceScatterPlot;
+  }(dbsliceCrossfilterPlot); // dbsliceScatterPlot
+
+  // Entry point for the bundling. Build up the session here. Then index.html just runs the bundled javascript file.
+  var container = document.getElementById("plot-container");
+  var datafile = new metadataFile("./_data/iris_data.csv");
+  datafile.load();
+  datafile.promise.then(function (fileobj) {
+    // Make an inset, and attach it to a plot.
+    var plot = new dbsliceScatterPlot(fileobj.content);
+    container.appendChild(plot.node);
+    plot.draw();
+  }); // then
 
 }());
 //# sourceMappingURL=dbslice.js.map

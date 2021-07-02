@@ -75,47 +75,25 @@ document.getElementById("add-plot").addEventListener("click", ()=>{
 */
 
 
-
-import twoInteractiveAxesInset from "./plot/twoInteractiveAxesInset.js";
-
-
-
-// d3.csv reads everything as strings, and this function can convert all number strings to numbers.
-function convertNumbers(array){
-	return array.map(function(row){
-			
-		var r = {};
-		for (var k in row) {
-			r[k] = +row[k];
-			if (isNaN(r[k])) {
-				r[k] = row[k];
-			} // if
-		} // for
-	  return r;
-	})
-} // convertNumbers
+import metadataFile from "./core/supportedfiles/metadataFile.js";
+import dbsliceScatterPlot from "./plot/dbsliceScatterPlot.js";
 
 
+let container = document.getElementById("plot-container");
 
-let plotContainer = document.getElementById("plot-container");
 
-// Make an inset, and attach it to a plot.
-let plot = new twoInteractiveAxesInset();
-plotContainer.appendChild(plot.node);
-plot.update();
-console.log(plot)
-
-// Work on just developing the twoaxis inset here.
-d3.csv("./_data/iris_data.csv")
-  .then(content=>{ return {
-	  data: convertNumbers(content),
-	  variables: content.columns
-    }
-  })
-  .then(content=>{ 
+let datafile = new metadataFile("./_data/iris_data.csv");
+datafile.load();
+datafile.promise.then(fileobj=>{
 	
-	plot.adddata(content);
-})
+	// Make an inset, and attach it to a plot.
+	let plot = new dbsliceScatterPlot(fileobj.content);
+	container.appendChild(plot.node);
+	
+	
+	plot.draw()
+}) // then
+
 
 
 

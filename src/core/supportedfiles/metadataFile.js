@@ -308,12 +308,21 @@ export default class metadataFile extends dbsliceFile {
 			.then(function(variableClassification){
 				// The promises update the variable classification into the file object directly.
 				
-				// If any variables have been identified as datetypes, then convert them all to datetypes here to save the hassle for later.
+				// After teh classification is complete some other actions can be taken to ease interaction with the data further along the visualisation pipeline.
 				obj.content.variables.forEach(variable=>{
+					
+					// If any variables have been identified as datetypes, then convert them all to datetypes here to save the hassle for later.
 					if(variable.supportedTypes.includes("datetime")){
 						obj.content.data.forEach(row=>{
 							row[variable.name] = supportedVariableTypes.string.string2datetime( row[variable.name] );
 						}) // forEach
+					} // if
+					
+					
+					
+					// After the classification it is handy to have access to the extents of ordinal variables.
+					if(variable.category == "ordinal"){
+						variable.extent = d3.extent( obj.content.data, row=>row[variable.name] );
 					} // if
 				}) // forEach
 				

@@ -8,18 +8,13 @@ This one should define all the user interactions it needs. So it needs to know t
 Children (scaterplot, line) should have lasso selection. In the case of the line the data comes from the loaded files, and not from hte metadata. So the plot containing them should update them.
 */
 
-// d3 to draw the axes.
-import * as d3 from "d3";
 
 
 
-import {html2element, calculateExponent} from "../core/helpers.js";
-
-
+import {html2element} from "../core/helpers.js";
 import ordinalAxis from "./ordinalAxis.js";
 
 
-import {makeObservable, observable, computed, action, autorun} from "mobx";
 
 
 
@@ -31,7 +26,7 @@ x/y-axis  : x/y axis elements
 exponent  : power exponent (big number labels may overlap otherwise)
 */
 let template = `
-	<svg class="plot-area">
+	<svg class="plot-area" width="400" height="400">
 		
 		<g class="background">
 			<clipPath>
@@ -53,19 +48,23 @@ let template = `
 `;
 
 
-// The axis scale needs to have access to the data and to the svg dimensions.
+// The axis scale needs to have access to the data and to the svg dimensions. Actually not access to the data, but access to the data extent. This has been solved by adding calculated extents to the variable objects.
 
 
-// Start thinking about integrating this one within dbsliceOrdinalPlot.
+// It's best to just pass all the variables to the axis, and let it handle everything connected to it. 
 
 
+// This class is a template for two interactive axes svg based plotting.
+
+
+// WILL HOLD THE ZOOM + PAN THOUGH!!!.
 
 
 export default class twoInteractiveAxesInset{
 	
 	// Generally I'll need variables to select from, and data that needs to be plotted.
 	variables = []
-	data = []
+	
 	
 	
 	/* For each axis I'll need:
@@ -81,7 +80,7 @@ export default class twoInteractiveAxesInset{
 	
 	
 	
-	constructor(){
+	constructor(variables){
 		// What should this one get?
 		
 		
@@ -91,25 +90,17 @@ export default class twoInteractiveAxesInset{
 		obj.node = html2element(template);
 		
 		
+		
+		
 		// `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
-		obj.y = new ordinalAxis("y", obj.plotbox, [0, 1]);
-		obj.x = new ordinalAxis("x", obj.plotbox, [0, 1]);
+		obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
+		obj.x = new ordinalAxis("x", obj.plotbox, variables[1], variables);
 		
 		
 		obj.node.appendChild(obj.y.d3node.node());
 		obj.node.appendChild(obj.x.d3node.node());
 		
-		
-		
-		// Make it run automatically when new data becomes available.
-		makeObservable(obj, {
-			data: observable,
-			adddata: action
-		})
-		
-		
-		autorun(()=>{ obj.draw() })
-		
+	
 	} // constructor
 	
 	
@@ -128,58 +119,22 @@ export default class twoInteractiveAxesInset{
 	} // update
 	
 	
-	
-	
-	draw(){
-		// Draw all the tasks onto the plot.
-		let obj = this;
-		
-		d3.select(obj.node)
-		  .select("g.data")
-		  .selectAll("circle")
-		  .data( obj.data )
-		  .join(
-			enter => enter.append("circle")
-			  .attr("r", 5)
-			  .attr("fill", "cornflowerblue")
-			  .attr("cx", d=>obj.x.scale( d.sepal_length ))
-			  .attr("cy", d=>obj.y.scale( d.sepal_width )),
-			update => update
-			  .attr("cx", d=>obj.x.scale( d.sepal_length ))
-			  .attr("cy", d=>obj.y.scale( d.sepal_width )),
-			exit => exit.remove()
-		  )
-		
-	} // draw
-	
-	
-	
 	get plotbox(){
 		// Specify the area of the svg dedicated to the plot. In this case it'll be all of it. The margin determines the amount of whitespace around the plot. This whitespace will NOT include the axis labels etc.
 		let obj = this;
 		let margin = {top: 0, right: 0, bottom: 0, left: 0};
-		let svgrect = obj.node.getBoundingClientRect();
+		
+		// If the inset was not yet attached the getBoundingClientRect will return an empty rectangle. Instead, have this inset completely control the width and height of hte svg.
+		// let svgrect = obj.node.getBoundingClientRect();
 		let plot = {
-			x: [margin.left, svgrect.width - margin.left - margin.right], 
-			y: [margin.top , svgrect.height- margin.top  - margin.bottom]
+			x: [margin.left, obj.width - margin.left - margin.right], 
+			y: [margin.top , obj.height- margin.top  - margin.bottom]
 		}
 		return plot
 		
 	} // plotbox
 	
-	// Shouldn't this be moved to the plot??
-	adddata(content){
-		// When new data is given to the plots they should update.
-		this.data = content.data;
-		this.variables = content.variables;
-		
-		// Pick an x and y variable.
-		this.xvariable = content.variables[0];
-		this.yvariable = content.variables[1];
-		
-		this.x.setdomain(d3.extent(content.data, d=>d.sepal_length))
-		this.y.setdomain(d3.extent(content.data, d=>d.sepal_width))
-	}
+	
 	
 	
 } // twoInteractiveAxesInset

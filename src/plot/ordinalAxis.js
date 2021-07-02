@@ -42,9 +42,9 @@ let template = `
 // Now I need to add in a label saying linear/log
 // DONE!! Maybe a plus/minus next to the axes to increase the axis limits - instead of dragging the labels.
 
-// Also need zoom + pan: first do this one.
 
 
+// Maybe it'd be better
 
 export default class ordinalAxis{
 	
@@ -54,15 +54,19 @@ export default class ordinalAxis{
 	// These margins are required to completely fit the scales along with their labels, ticks and domain lines onto the plot.
 	margin = {top: 30, right: 20, bottom: 40, left: 40}
 	
-	constructor(axis, plotbox, initdomain){
-		/* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `initdomain' is the initial domain into which the data should be visualised. */
+	constructor(axis, plotbox, initvariable, ordinalvariables){
+		/* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `ordinalvariable' is a dbslice ordinal variable which is paired with this axis. */
 		let obj = this;
 		
-		
+		// Get rid of axis by abstracting?
 		obj.axis = axis;
-		
 		obj.setplotbox(plotbox);
-		obj.setdomain(initdomain);
+		
+		obj.variable = initvariable;
+		obj.variableoptions = ordinalvariables;
+		
+		
+		obj.setdomain(initvariable.extent);
 		
 		// When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
 		
