@@ -20,7 +20,7 @@ Create a uniform backbone for all crossfilter plots.
 */
 
 // Maybe move the width and height from the CSS into here?
-import {css} from "./css.js";
+import {css} from "./components/css.js";
 
 
 

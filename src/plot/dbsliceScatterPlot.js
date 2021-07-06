@@ -2,7 +2,7 @@ import {html2element} from "../core/helpers.js";
 
 import dbsliceCrossfilterPlot from "./dbsliceCrossfilterPlot.js";
 
-import twoInteractiveAxesInset from "./twoInteractiveAxesInset.js";
+import twoInteractiveAxesInset from "./components/twoInteractiveAxesInset.js";
 
 
 import {autorun} from "mobx";

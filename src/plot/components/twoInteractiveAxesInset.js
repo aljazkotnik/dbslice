@@ -11,7 +11,7 @@ Children (scaterplot, line) should have lasso selection. In the case of the line
 
 
 
-import {html2element} from "../core/helpers.js";
+import {html2element} from "../../core/helpers.js";
 import ordinalAxis from "./ordinalAxis.js";
 import divSelectMenu from "./divSelectMenu.js";
 import {makeObservable, autorun} from "mobx";

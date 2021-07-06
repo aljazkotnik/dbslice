@@ -1,4 +1,4 @@
-import {html2element} from "../core/helpers.js";
+import {html2element} from "../../core/helpers.js";
 import {makeObservable, observable, computed, action, autorun} from "mobx";
 
 // A custom select menu to facilitate the variable selection in menus.

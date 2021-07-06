@@ -1,6 +1,6 @@
 
 import * as d3 from "d3";
-import {html2element, calculateExponent} from "../core/helpers.js";
+import {html2element, calculateExponent} from "../../core/helpers.js";
 
 import {makeObservable, observable, computed, autorun, action} from "mobx";
 
