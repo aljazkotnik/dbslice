@@ -13,7 +13,11 @@ Children (scaterplot, line) should have lasso selection. In the case of the line
 
 import {html2element} from "../core/helpers.js";
 import ordinalAxis from "./ordinalAxis.js";
+import divSelectMenu from "./divSelectMenu.js";
+import {makeObservable, autorun} from "mobx";
 
+// Zooming is required.
+import * as d3 from "d3";
 
 
 
@@ -25,7 +29,29 @@ markup    : non-primary data graphic markups, (e.g. compressor map chics)
 x/y-axis  : x/y axis elements
 exponent  : power exponent (big number labels may overlap otherwise)
 */
+
+// Just position right and bottom to fit to the variable label position. This seems reasonable for now.
+let variablemenustyle = `
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 5px;
+  display: none; 
+  position: absolute; 
+  right: 10px; 
+  bottom: 10px;
+`;
+
+let ulstyle = `
+  list-style-type: none;
+  font-size: 10px;
+  font-weight: bold;
+  padding-left: 4px;
+  padding-right: 4px;
+`;
+
+
 let template = `
+<div>
 	<svg class="plot-area" width="400" height="400">
 		
 		<g class="background">
@@ -43,8 +69,14 @@ let template = `
 		<g class="data"></g>
 		<g class="markup"></g>
 		
+		<g class="axes"></g>
+		
 		
 	</svg>
+	
+	<div class="variable-select-menus"></div>
+	
+</div>
 `;
 
 
@@ -57,7 +89,7 @@ let template = `
 // This class is a template for two interactive axes svg based plotting.
 
 
-
+// Handle the variable changing here!!!
 
 export default class twoInteractiveAxesInset{
 	
@@ -74,22 +106,51 @@ export default class twoInteractiveAxesInset{
 	constructor(variables){
 		let obj = this;
 		
+		
+		
+		
 		obj.node = html2element(template);
 		
+		
+		// Add the menu objects.
+		obj.ymenu = obj.addVariableMenu(variables);
+		obj.xmenu = obj.addVariableMenu(variables);
+		
+		
+		// Make the axis objects, and connect them to the menu selection.
 		// `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
-		obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
-		obj.x = new ordinalAxis("x", obj.plotbox, variables[1], variables);
+		obj.y = new ordinalAxis("y", obj.plotbox, obj.ymenu.current);
+		obj.x = new ordinalAxis("x", obj.plotbox, obj.xmenu.current);
+		
+		let axisContainer = obj.node.querySelector("g.axes");
+		axisContainer.appendChild(obj.y.node);
+		axisContainer.appendChild(obj.x.node);
 		
 		
-		obj.node.appendChild(obj.y.d3node.node());
-		obj.node.appendChild(obj.x.d3node.node());
 		
-		// Add the zooming.
+		// The zooming depends on the obj.y/x scales.
 		obj.addZooming();
+		
+		
+		// Conytol the appearance/disappearance of the variable selection menus.
+		obj.addVariableMenuToggling()
+		
+		
+		// Automatically
+		autorun(()=>{obj.coordinateMenusWithAxes()});
 		
 	
 	} // constructor
 	
+	
+	coordinateMenusWithAxes(){
+		let obj = this;
+		
+		// When the current in the menu changes the axis should be updated.
+		obj.y.variable = obj.ymenu.current;
+		obj.x.variable = obj.xmenu.current;
+		
+	} // coordinateMenusWithAxes
 	
 	
 	get plotbox(){
@@ -107,6 +168,72 @@ export default class twoInteractiveAxesInset{
 		
 	} // plotbox
 	
+	
+	// Wrapper functions to show the menus are implemented to facilitate custom positioning. For the y-menu this can't be achieved through CSS as the menu is appended after the SVG (placing it to the right bottom), but it needs to be positioned at the top left. Therefore it must be offset by the SVG width and height.
+	// Ah, but left/top and right/bottom are in respect to the parent!!
+	xMenuShow(){
+		let obj = this;
+		
+		obj.xmenu.node.style.right = "10px";
+		obj.xmenu.node.style.bottom = "10px";
+		
+		obj.xmenu.show();
+	} // xMenuShow
+	
+	yMenuShow(){
+		let obj = this;
+		
+		obj.ymenu.node.style.left = "5px";
+		obj.ymenu.node.style.top = "10px";
+		
+		obj.ymenu.show();
+	} // xMenuShow
+	
+	
+	addVariableMenu(variables){
+		let obj = this;
+		
+		// Add the menu objects.
+		let menuContainer = obj.node.querySelector("div.variable-select-menus");
+		
+		// Variable menu functionality;
+		let menu = new divSelectMenu();
+		menuContainer.appendChild(menu.node);
+		menu.variables = variables;
+		
+		return menu
+	} // addXVariableMenu
+	
+	
+	addVariableMenuToggling(){
+		// This could be abstracted further in principle.
+		let obj = this;
+		
+		let xMenuToggle = obj.x.node
+		  .querySelector("g.variable-controls")
+		  .querySelector("text.label");
+		let yMenuToggle = obj.y.node
+		  .querySelector("g.variable-controls")
+		  .querySelector("text.label");
+		
+		
+		xMenuToggle.addEventListener("click", (event)=>{
+		  event.stopPropagation();
+		  obj.xMenuShow();
+		})
+		
+		yMenuToggle.addEventListener("click", (event)=>{
+		  event.stopPropagation();
+		  obj.yMenuShow();
+		})
+		
+		// If the user clicks anywhere else the menus should be hidden.
+		obj.node.addEventListener("click", (event)=>{
+			obj.xmenu.hide();
+			obj.ymenu.hide();
+		})
+		
+	} // addVariableMenuToggling
 	
 	
 	// Maybe this can be an external module? But it depends directly on how the axis are specified - minimum reusability.

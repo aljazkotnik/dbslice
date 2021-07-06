@@ -153,7 +153,7 @@
     // calculate the exponent for the scientific notation.
     var exp = 0;
 
-    while (Math.floor(val / Math.pow(10, exp + 1)) > 0) {
+    while (Math.floor(Math.abs(val) / Math.pow(10, exp + 1)) > 0) {
       exp += 1;
     } // Convert the exponent to multiple of three
 
@@ -275,7 +275,7 @@
 
   var slice = Array.prototype.slice;
 
-  function identity$3(x) {
+  function identity$4(x) {
     return x;
   }
 
@@ -321,7 +321,7 @@
 
     function axis(context) {
       var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
-          format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity$3) : tickFormat,
+          format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity$4) : tickFormat,
           spacing = Math.max(tickSizeInner, 0) + tickPadding,
           range = scale.range(),
           range0 = +range[0] + offset,
@@ -712,7 +712,7 @@
     querySelectorAll: function(selector) { return this._parent.querySelectorAll(selector); }
   };
 
-  function constant$2(x) {
+  function constant$3(x) {
     return function() {
       return x;
     };
@@ -799,7 +799,7 @@
         parents = this._parents,
         groups = this._groups;
 
-    if (typeof value !== "function") value = constant$2(value);
+    if (typeof value !== "function") value = constant$3(value);
 
     for (var m = groups.length, update = new Array(m), enter = new Array(m), exit = new Array(m), j = 0; j < m; ++j) {
       var parent = parents[j],
@@ -1457,20 +1457,20 @@
     return [event.pageX, event.pageY];
   }
 
-  function nopropagation(event) {
+  function nopropagation$1(event) {
     event.stopImmediatePropagation();
   }
 
-  function noevent(event) {
+  function noevent$1(event) {
     event.preventDefault();
     event.stopImmediatePropagation();
   }
 
   function dragDisable(view) {
     var root = view.document.documentElement,
-        selection = select(view).on("dragstart.drag", noevent, true);
+        selection = select(view).on("dragstart.drag", noevent$1, true);
     if ("onselectstart" in root) {
-      selection.on("selectstart.drag", noevent, true);
+      selection.on("selectstart.drag", noevent$1, true);
     } else {
       root.__noselect = root.style.MozUserSelect;
       root.style.MozUserSelect = "none";
@@ -1481,7 +1481,7 @@
     var root = view.document.documentElement,
         selection = select(view).on("dragstart.drag", null);
     if (noclick) {
-      selection.on("click.drag", noevent, true);
+      selection.on("click.drag", noevent$1, true);
       setTimeout(function() { selection.on("click.drag", null); }, 0);
     }
     if ("onselectstart" in root) {
@@ -1492,7 +1492,7 @@
     }
   }
 
-  var constant$1 = x => () => x;
+  var constant$2 = x => () => x;
 
   function DragEvent(type, {
     sourceEvent,
@@ -1524,7 +1524,7 @@
   };
 
   // Ignore right-click, since that should open the context menu.
-  function defaultFilter(event) {
+  function defaultFilter$1(event) {
     return !event.ctrlKey && !event.button;
   }
 
@@ -1536,15 +1536,15 @@
     return d == null ? {x: event.x, y: event.y} : d;
   }
 
-  function defaultTouchable() {
+  function defaultTouchable$1() {
     return navigator.maxTouchPoints || ("ontouchstart" in this);
   }
 
   function drag() {
-    var filter = defaultFilter,
+    var filter = defaultFilter$1,
         container = defaultContainer,
         subject = defaultSubject,
-        touchable = defaultTouchable,
+        touchable = defaultTouchable$1,
         gestures = {},
         listeners = dispatch("start", "drag", "end"),
         active = 0,
@@ -1571,7 +1571,7 @@
       if (!gesture) return;
       select(event.view).on("mousemove.drag", mousemoved, true).on("mouseup.drag", mouseupped, true);
       dragDisable(event.view);
-      nopropagation(event);
+      nopropagation$1(event);
       mousemoving = false;
       mousedownx = event.clientX;
       mousedowny = event.clientY;
@@ -1579,7 +1579,7 @@
     }
 
     function mousemoved(event) {
-      noevent(event);
+      noevent$1(event);
       if (!mousemoving) {
         var dx = event.clientX - mousedownx, dy = event.clientY - mousedowny;
         mousemoving = dx * dx + dy * dy > clickDistance2;
@@ -1590,7 +1590,7 @@
     function mouseupped(event) {
       select(event.view).on("mousemove.drag mouseup.drag", null);
       yesdrag(event.view, mousemoving);
-      noevent(event);
+      noevent$1(event);
       gestures.mouse("end", event);
     }
 
@@ -1602,7 +1602,7 @@
 
       for (i = 0; i < n; ++i) {
         if (gesture = beforestart(this, c, event, d, touches[i].identifier, touches[i])) {
-          nopropagation(event);
+          nopropagation$1(event);
           gesture("start", event, touches[i]);
         }
       }
@@ -1614,7 +1614,7 @@
 
       for (i = 0; i < n; ++i) {
         if (gesture = gestures[touches[i].identifier]) {
-          noevent(event);
+          noevent$1(event);
           gesture("drag", event, touches[i]);
         }
       }
@@ -1628,7 +1628,7 @@
       touchending = setTimeout(function() { touchending = null; }, 500); // Ghost clicks are delayed!
       for (i = 0; i < n; ++i) {
         if (gesture = gestures[touches[i].identifier]) {
-          nopropagation(event);
+          nopropagation$1(event);
           gesture("end", event, touches[i]);
         }
       }
@@ -1682,19 +1682,19 @@
     }
 
     drag.filter = function(_) {
-      return arguments.length ? (filter = typeof _ === "function" ? _ : constant$1(!!_), drag) : filter;
+      return arguments.length ? (filter = typeof _ === "function" ? _ : constant$2(!!_), drag) : filter;
     };
 
     drag.container = function(_) {
-      return arguments.length ? (container = typeof _ === "function" ? _ : constant$1(_), drag) : container;
+      return arguments.length ? (container = typeof _ === "function" ? _ : constant$2(_), drag) : container;
     };
 
     drag.subject = function(_) {
-      return arguments.length ? (subject = typeof _ === "function" ? _ : constant$1(_), drag) : subject;
+      return arguments.length ? (subject = typeof _ === "function" ? _ : constant$2(_), drag) : subject;
     };
 
     drag.touchable = function(_) {
-      return arguments.length ? (touchable = typeof _ === "function" ? _ : constant$1(!!_), drag) : touchable;
+      return arguments.length ? (touchable = typeof _ === "function" ? _ : constant$2(!!_), drag) : touchable;
     };
 
     drag.on = function() {
@@ -2090,7 +2090,7 @@
         : m1) * 255;
   }
 
-  var constant = x => () => x;
+  var constant$1 = x => () => x;
 
   function linear$1(a, d) {
     return function(t) {
@@ -2106,13 +2106,13 @@
 
   function gamma(y) {
     return (y = +y) === 1 ? nogamma : function(a, b) {
-      return b - a ? exponential(a, b, y) : constant(isNaN(a) ? b : a);
+      return b - a ? exponential(a, b, y) : constant$1(isNaN(a) ? b : a);
     };
   }
 
   function nogamma(a, b) {
     var d = b - a;
-    return d ? linear$1(a, d) : constant(isNaN(a) ? b : a);
+    return d ? linear$1(a, d) : constant$1(isNaN(a) ? b : a);
   }
 
   var interpolateRgb = (function rgbGamma(y) {
@@ -2268,7 +2268,7 @@
 
   function interpolate$1(a, b) {
     var t = typeof b, c;
-    return b == null || t === "boolean" ? constant(b)
+    return b == null || t === "boolean" ? constant$1(b)
         : (t === "number" ? interpolateNumber
         : t === "string" ? ((c = color(b)) ? (b = c, interpolateRgb) : interpolateString)
         : b instanceof color ? interpolateRgb
@@ -2287,7 +2287,7 @@
 
   var degrees = 180 / Math.PI;
 
-  var identity$2 = {
+  var identity$3 = {
     translateX: 0,
     translateY: 0,
     rotate: 0,
@@ -2317,14 +2317,14 @@
   /* eslint-disable no-undef */
   function parseCss(value) {
     const m = new (typeof DOMMatrix === "function" ? DOMMatrix : WebKitCSSMatrix)(value + "");
-    return m.isIdentity ? identity$2 : decompose(m.a, m.b, m.c, m.d, m.e, m.f);
+    return m.isIdentity ? identity$3 : decompose(m.a, m.b, m.c, m.d, m.e, m.f);
   }
 
   function parseSvg(value) {
-    if (value == null) return identity$2;
+    if (value == null) return identity$3;
     if (!svgNode) svgNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
     svgNode.setAttribute("transform", value);
-    if (!(value = svgNode.transform.baseVal.consolidate())) return identity$2;
+    if (!(value = svgNode.transform.baseVal.consolidate())) return identity$3;
     value = value.matrix;
     return decompose(value.a, value.b, value.c, value.d, value.e, value.f);
   }
@@ -2389,6 +2389,78 @@
 
   var interpolateTransformCss = interpolateTransform(parseCss, "px, ", "px)", "deg)");
   var interpolateTransformSvg = interpolateTransform(parseSvg, ", ", ")", ")");
+
+  var epsilon2 = 1e-12;
+
+  function cosh(x) {
+    return ((x = Math.exp(x)) + 1 / x) / 2;
+  }
+
+  function sinh(x) {
+    return ((x = Math.exp(x)) - 1 / x) / 2;
+  }
+
+  function tanh(x) {
+    return ((x = Math.exp(2 * x)) - 1) / (x + 1);
+  }
+
+  var interpolateZoom = (function zoomRho(rho, rho2, rho4) {
+
+    // p0 = [ux0, uy0, w0]
+    // p1 = [ux1, uy1, w1]
+    function zoom(p0, p1) {
+      var ux0 = p0[0], uy0 = p0[1], w0 = p0[2],
+          ux1 = p1[0], uy1 = p1[1], w1 = p1[2],
+          dx = ux1 - ux0,
+          dy = uy1 - uy0,
+          d2 = dx * dx + dy * dy,
+          i,
+          S;
+
+      // Special case for u0 ≅ u1.
+      if (d2 < epsilon2) {
+        S = Math.log(w1 / w0) / rho;
+        i = function(t) {
+          return [
+            ux0 + t * dx,
+            uy0 + t * dy,
+            w0 * Math.exp(rho * t * S)
+          ];
+        };
+      }
+
+      // General case.
+      else {
+        var d1 = Math.sqrt(d2),
+            b0 = (w1 * w1 - w0 * w0 + rho4 * d2) / (2 * w0 * rho2 * d1),
+            b1 = (w1 * w1 - w0 * w0 - rho4 * d2) / (2 * w1 * rho2 * d1),
+            r0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0),
+            r1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
+        S = (r1 - r0) / rho;
+        i = function(t) {
+          var s = t * S,
+              coshr0 = cosh(r0),
+              u = w0 / (rho2 * d1) * (coshr0 * tanh(rho * s + r0) - sinh(r0));
+          return [
+            ux0 + u * dx,
+            uy0 + u * dy,
+            w0 * coshr0 / cosh(rho * s + r0)
+          ];
+        };
+      }
+
+      i.duration = S * 1000 * rho / Math.SQRT2;
+
+      return i;
+    }
+
+    zoom.rho = function(_) {
+      var _1 = Math.max(1e-3, +_), _2 = _1 * _1, _4 = _2 * _2;
+      return zoomRho(_1, _2, _4);
+    };
+
+    return zoom;
+  })(Math.SQRT2, 2, 4);
 
   var frame = 0, // is an animation frame pending?
       timeout$1 = 0, // is a timeout pending?
@@ -3728,7 +3800,7 @@
     "x": (x) => Math.round(x).toString(16)
   };
 
-  function identity$1(x) {
+  function identity$2(x) {
     return x;
   }
 
@@ -3736,11 +3808,11 @@
       prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"];
 
   function formatLocale(locale) {
-    var group = locale.grouping === undefined || locale.thousands === undefined ? identity$1 : formatGroup(map.call(locale.grouping, Number), locale.thousands + ""),
+    var group = locale.grouping === undefined || locale.thousands === undefined ? identity$2 : formatGroup(map.call(locale.grouping, Number), locale.thousands + ""),
         currencyPrefix = locale.currency === undefined ? "" : locale.currency[0] + "",
         currencySuffix = locale.currency === undefined ? "" : locale.currency[1] + "",
         decimal = locale.decimal === undefined ? "." : locale.decimal + "",
-        numerals = locale.numerals === undefined ? identity$1 : formatNumerals(map.call(locale.numerals, String)),
+        numerals = locale.numerals === undefined ? identity$2 : formatNumerals(map.call(locale.numerals, String)),
         percent = locale.percent === undefined ? "%" : locale.percent + "",
         minus = locale.minus === undefined ? "−" : locale.minus + "",
         nan = locale.nan === undefined ? "NaN" : locale.nan + "";
@@ -3923,7 +3995,7 @@
 
   var unit = [0, 1];
 
-  function identity(x) {
+  function identity$1(x) {
     return x;
   }
 
@@ -3987,14 +4059,14 @@
         transform,
         untransform,
         unknown,
-        clamp = identity,
+        clamp = identity$1,
         piecewise,
         output,
         input;
 
     function rescale() {
       var n = Math.min(domain.length, range.length);
-      if (clamp !== identity) clamp = clamper(domain[0], domain[n - 1]);
+      if (clamp !== identity$1) clamp = clamper(domain[0], domain[n - 1]);
       piecewise = n > 2 ? polymap : bimap;
       output = input = null;
       return scale;
@@ -4021,7 +4093,7 @@
     };
 
     scale.clamp = function(_) {
-      return arguments.length ? (clamp = _ ? true : identity, rescale()) : clamp !== identity;
+      return arguments.length ? (clamp = _ ? true : identity$1, rescale()) : clamp !== identity$1;
     };
 
     scale.interpolate = function(_) {
@@ -4039,7 +4111,7 @@
   }
 
   function continuous() {
-    return transformer()(identity, identity);
+    return transformer()(identity$1, identity$1);
   }
 
   function tickFormat(start, stop, count, specifier) {
@@ -4293,6 +4365,515 @@
     initRange.apply(scale, arguments);
 
     return scale;
+  }
+
+  var constant = x => () => x;
+
+  function ZoomEvent(type, {
+    sourceEvent,
+    target,
+    transform,
+    dispatch
+  }) {
+    Object.defineProperties(this, {
+      type: {value: type, enumerable: true, configurable: true},
+      sourceEvent: {value: sourceEvent, enumerable: true, configurable: true},
+      target: {value: target, enumerable: true, configurable: true},
+      transform: {value: transform, enumerable: true, configurable: true},
+      _: {value: dispatch}
+    });
+  }
+
+  function Transform(k, x, y) {
+    this.k = k;
+    this.x = x;
+    this.y = y;
+  }
+
+  Transform.prototype = {
+    constructor: Transform,
+    scale: function(k) {
+      return k === 1 ? this : new Transform(this.k * k, this.x, this.y);
+    },
+    translate: function(x, y) {
+      return x === 0 & y === 0 ? this : new Transform(this.k, this.x + this.k * x, this.y + this.k * y);
+    },
+    apply: function(point) {
+      return [point[0] * this.k + this.x, point[1] * this.k + this.y];
+    },
+    applyX: function(x) {
+      return x * this.k + this.x;
+    },
+    applyY: function(y) {
+      return y * this.k + this.y;
+    },
+    invert: function(location) {
+      return [(location[0] - this.x) / this.k, (location[1] - this.y) / this.k];
+    },
+    invertX: function(x) {
+      return (x - this.x) / this.k;
+    },
+    invertY: function(y) {
+      return (y - this.y) / this.k;
+    },
+    rescaleX: function(x) {
+      return x.copy().domain(x.range().map(this.invertX, this).map(x.invert, x));
+    },
+    rescaleY: function(y) {
+      return y.copy().domain(y.range().map(this.invertY, this).map(y.invert, y));
+    },
+    toString: function() {
+      return "translate(" + this.x + "," + this.y + ") scale(" + this.k + ")";
+    }
+  };
+
+  var identity = new Transform(1, 0, 0);
+
+  function nopropagation(event) {
+    event.stopImmediatePropagation();
+  }
+
+  function noevent(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  // Ignore right-click, since that should open the context menu.
+  // except for pinch-to-zoom, which is sent as a wheel+ctrlKey event
+  function defaultFilter(event) {
+    return (!event.ctrlKey || event.type === 'wheel') && !event.button;
+  }
+
+  function defaultExtent() {
+    var e = this;
+    if (e instanceof SVGElement) {
+      e = e.ownerSVGElement || e;
+      if (e.hasAttribute("viewBox")) {
+        e = e.viewBox.baseVal;
+        return [[e.x, e.y], [e.x + e.width, e.y + e.height]];
+      }
+      return [[0, 0], [e.width.baseVal.value, e.height.baseVal.value]];
+    }
+    return [[0, 0], [e.clientWidth, e.clientHeight]];
+  }
+
+  function defaultTransform() {
+    return this.__zoom || identity;
+  }
+
+  function defaultWheelDelta(event) {
+    return -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002) * (event.ctrlKey ? 10 : 1);
+  }
+
+  function defaultTouchable() {
+    return navigator.maxTouchPoints || ("ontouchstart" in this);
+  }
+
+  function defaultConstrain(transform, extent, translateExtent) {
+    var dx0 = transform.invertX(extent[0][0]) - translateExtent[0][0],
+        dx1 = transform.invertX(extent[1][0]) - translateExtent[1][0],
+        dy0 = transform.invertY(extent[0][1]) - translateExtent[0][1],
+        dy1 = transform.invertY(extent[1][1]) - translateExtent[1][1];
+    return transform.translate(
+      dx1 > dx0 ? (dx0 + dx1) / 2 : Math.min(0, dx0) || Math.max(0, dx1),
+      dy1 > dy0 ? (dy0 + dy1) / 2 : Math.min(0, dy0) || Math.max(0, dy1)
+    );
+  }
+
+  function zoom() {
+    var filter = defaultFilter,
+        extent = defaultExtent,
+        constrain = defaultConstrain,
+        wheelDelta = defaultWheelDelta,
+        touchable = defaultTouchable,
+        scaleExtent = [0, Infinity],
+        translateExtent = [[-Infinity, -Infinity], [Infinity, Infinity]],
+        duration = 250,
+        interpolate = interpolateZoom,
+        listeners = dispatch("start", "zoom", "end"),
+        touchstarting,
+        touchfirst,
+        touchending,
+        touchDelay = 500,
+        wheelDelay = 150,
+        clickDistance2 = 0,
+        tapDistance = 10;
+
+    function zoom(selection) {
+      selection
+          .property("__zoom", defaultTransform)
+          .on("wheel.zoom", wheeled)
+          .on("mousedown.zoom", mousedowned)
+          .on("dblclick.zoom", dblclicked)
+        .filter(touchable)
+          .on("touchstart.zoom", touchstarted)
+          .on("touchmove.zoom", touchmoved)
+          .on("touchend.zoom touchcancel.zoom", touchended)
+          .style("-webkit-tap-highlight-color", "rgba(0,0,0,0)");
+    }
+
+    zoom.transform = function(collection, transform, point, event) {
+      var selection = collection.selection ? collection.selection() : collection;
+      selection.property("__zoom", defaultTransform);
+      if (collection !== selection) {
+        schedule(collection, transform, point, event);
+      } else {
+        selection.interrupt().each(function() {
+          gesture(this, arguments)
+            .event(event)
+            .start()
+            .zoom(null, typeof transform === "function" ? transform.apply(this, arguments) : transform)
+            .end();
+        });
+      }
+    };
+
+    zoom.scaleBy = function(selection, k, p, event) {
+      zoom.scaleTo(selection, function() {
+        var k0 = this.__zoom.k,
+            k1 = typeof k === "function" ? k.apply(this, arguments) : k;
+        return k0 * k1;
+      }, p, event);
+    };
+
+    zoom.scaleTo = function(selection, k, p, event) {
+      zoom.transform(selection, function() {
+        var e = extent.apply(this, arguments),
+            t0 = this.__zoom,
+            p0 = p == null ? centroid(e) : typeof p === "function" ? p.apply(this, arguments) : p,
+            p1 = t0.invert(p0),
+            k1 = typeof k === "function" ? k.apply(this, arguments) : k;
+        return constrain(translate(scale(t0, k1), p0, p1), e, translateExtent);
+      }, p, event);
+    };
+
+    zoom.translateBy = function(selection, x, y, event) {
+      zoom.transform(selection, function() {
+        return constrain(this.__zoom.translate(
+          typeof x === "function" ? x.apply(this, arguments) : x,
+          typeof y === "function" ? y.apply(this, arguments) : y
+        ), extent.apply(this, arguments), translateExtent);
+      }, null, event);
+    };
+
+    zoom.translateTo = function(selection, x, y, p, event) {
+      zoom.transform(selection, function() {
+        var e = extent.apply(this, arguments),
+            t = this.__zoom,
+            p0 = p == null ? centroid(e) : typeof p === "function" ? p.apply(this, arguments) : p;
+        return constrain(identity.translate(p0[0], p0[1]).scale(t.k).translate(
+          typeof x === "function" ? -x.apply(this, arguments) : -x,
+          typeof y === "function" ? -y.apply(this, arguments) : -y
+        ), e, translateExtent);
+      }, p, event);
+    };
+
+    function scale(transform, k) {
+      k = Math.max(scaleExtent[0], Math.min(scaleExtent[1], k));
+      return k === transform.k ? transform : new Transform(k, transform.x, transform.y);
+    }
+
+    function translate(transform, p0, p1) {
+      var x = p0[0] - p1[0] * transform.k, y = p0[1] - p1[1] * transform.k;
+      return x === transform.x && y === transform.y ? transform : new Transform(transform.k, x, y);
+    }
+
+    function centroid(extent) {
+      return [(+extent[0][0] + +extent[1][0]) / 2, (+extent[0][1] + +extent[1][1]) / 2];
+    }
+
+    function schedule(transition, transform, point, event) {
+      transition
+          .on("start.zoom", function() { gesture(this, arguments).event(event).start(); })
+          .on("interrupt.zoom end.zoom", function() { gesture(this, arguments).event(event).end(); })
+          .tween("zoom", function() {
+            var that = this,
+                args = arguments,
+                g = gesture(that, args).event(event),
+                e = extent.apply(that, args),
+                p = point == null ? centroid(e) : typeof point === "function" ? point.apply(that, args) : point,
+                w = Math.max(e[1][0] - e[0][0], e[1][1] - e[0][1]),
+                a = that.__zoom,
+                b = typeof transform === "function" ? transform.apply(that, args) : transform,
+                i = interpolate(a.invert(p).concat(w / a.k), b.invert(p).concat(w / b.k));
+            return function(t) {
+              if (t === 1) t = b; // Avoid rounding error on end.
+              else { var l = i(t), k = w / l[2]; t = new Transform(k, p[0] - l[0] * k, p[1] - l[1] * k); }
+              g.zoom(null, t);
+            };
+          });
+    }
+
+    function gesture(that, args, clean) {
+      return (!clean && that.__zooming) || new Gesture(that, args);
+    }
+
+    function Gesture(that, args) {
+      this.that = that;
+      this.args = args;
+      this.active = 0;
+      this.sourceEvent = null;
+      this.extent = extent.apply(that, args);
+      this.taps = 0;
+    }
+
+    Gesture.prototype = {
+      event: function(event) {
+        if (event) this.sourceEvent = event;
+        return this;
+      },
+      start: function() {
+        if (++this.active === 1) {
+          this.that.__zooming = this;
+          this.emit("start");
+        }
+        return this;
+      },
+      zoom: function(key, transform) {
+        if (this.mouse && key !== "mouse") this.mouse[1] = transform.invert(this.mouse[0]);
+        if (this.touch0 && key !== "touch") this.touch0[1] = transform.invert(this.touch0[0]);
+        if (this.touch1 && key !== "touch") this.touch1[1] = transform.invert(this.touch1[0]);
+        this.that.__zoom = transform;
+        this.emit("zoom");
+        return this;
+      },
+      end: function() {
+        if (--this.active === 0) {
+          delete this.that.__zooming;
+          this.emit("end");
+        }
+        return this;
+      },
+      emit: function(type) {
+        var d = select(this.that).datum();
+        listeners.call(
+          type,
+          this.that,
+          new ZoomEvent(type, {
+            sourceEvent: this.sourceEvent,
+            target: zoom,
+            type,
+            transform: this.that.__zoom,
+            dispatch: listeners
+          }),
+          d
+        );
+      }
+    };
+
+    function wheeled(event, ...args) {
+      if (!filter.apply(this, arguments)) return;
+      var g = gesture(this, args).event(event),
+          t = this.__zoom,
+          k = Math.max(scaleExtent[0], Math.min(scaleExtent[1], t.k * Math.pow(2, wheelDelta.apply(this, arguments)))),
+          p = pointer(event);
+
+      // If the mouse is in the same location as before, reuse it.
+      // If there were recent wheel events, reset the wheel idle timeout.
+      if (g.wheel) {
+        if (g.mouse[0][0] !== p[0] || g.mouse[0][1] !== p[1]) {
+          g.mouse[1] = t.invert(g.mouse[0] = p);
+        }
+        clearTimeout(g.wheel);
+      }
+
+      // If this wheel event won’t trigger a transform change, ignore it.
+      else if (t.k === k) return;
+
+      // Otherwise, capture the mouse point and location at the start.
+      else {
+        g.mouse = [p, t.invert(p)];
+        interrupt(this);
+        g.start();
+      }
+
+      noevent(event);
+      g.wheel = setTimeout(wheelidled, wheelDelay);
+      g.zoom("mouse", constrain(translate(scale(t, k), g.mouse[0], g.mouse[1]), g.extent, translateExtent));
+
+      function wheelidled() {
+        g.wheel = null;
+        g.end();
+      }
+    }
+
+    function mousedowned(event, ...args) {
+      if (touchending || !filter.apply(this, arguments)) return;
+      var g = gesture(this, args, true).event(event),
+          v = select(event.view).on("mousemove.zoom", mousemoved, true).on("mouseup.zoom", mouseupped, true),
+          p = pointer(event, currentTarget),
+          currentTarget = event.currentTarget,
+          x0 = event.clientX,
+          y0 = event.clientY;
+
+      dragDisable(event.view);
+      nopropagation(event);
+      g.mouse = [p, this.__zoom.invert(p)];
+      interrupt(this);
+      g.start();
+
+      function mousemoved(event) {
+        noevent(event);
+        if (!g.moved) {
+          var dx = event.clientX - x0, dy = event.clientY - y0;
+          g.moved = dx * dx + dy * dy > clickDistance2;
+        }
+        g.event(event)
+         .zoom("mouse", constrain(translate(g.that.__zoom, g.mouse[0] = pointer(event, currentTarget), g.mouse[1]), g.extent, translateExtent));
+      }
+
+      function mouseupped(event) {
+        v.on("mousemove.zoom mouseup.zoom", null);
+        yesdrag(event.view, g.moved);
+        noevent(event);
+        g.event(event).end();
+      }
+    }
+
+    function dblclicked(event, ...args) {
+      if (!filter.apply(this, arguments)) return;
+      var t0 = this.__zoom,
+          p0 = pointer(event.changedTouches ? event.changedTouches[0] : event, this),
+          p1 = t0.invert(p0),
+          k1 = t0.k * (event.shiftKey ? 0.5 : 2),
+          t1 = constrain(translate(scale(t0, k1), p0, p1), extent.apply(this, args), translateExtent);
+
+      noevent(event);
+      if (duration > 0) select(this).transition().duration(duration).call(schedule, t1, p0, event);
+      else select(this).call(zoom.transform, t1, p0, event);
+    }
+
+    function touchstarted(event, ...args) {
+      if (!filter.apply(this, arguments)) return;
+      var touches = event.touches,
+          n = touches.length,
+          g = gesture(this, args, event.changedTouches.length === n).event(event),
+          started, i, t, p;
+
+      nopropagation(event);
+      for (i = 0; i < n; ++i) {
+        t = touches[i], p = pointer(t, this);
+        p = [p, this.__zoom.invert(p), t.identifier];
+        if (!g.touch0) g.touch0 = p, started = true, g.taps = 1 + !!touchstarting;
+        else if (!g.touch1 && g.touch0[2] !== p[2]) g.touch1 = p, g.taps = 0;
+      }
+
+      if (touchstarting) touchstarting = clearTimeout(touchstarting);
+
+      if (started) {
+        if (g.taps < 2) touchfirst = p[0], touchstarting = setTimeout(function() { touchstarting = null; }, touchDelay);
+        interrupt(this);
+        g.start();
+      }
+    }
+
+    function touchmoved(event, ...args) {
+      if (!this.__zooming) return;
+      var g = gesture(this, args).event(event),
+          touches = event.changedTouches,
+          n = touches.length, i, t, p, l;
+
+      noevent(event);
+      for (i = 0; i < n; ++i) {
+        t = touches[i], p = pointer(t, this);
+        if (g.touch0 && g.touch0[2] === t.identifier) g.touch0[0] = p;
+        else if (g.touch1 && g.touch1[2] === t.identifier) g.touch1[0] = p;
+      }
+      t = g.that.__zoom;
+      if (g.touch1) {
+        var p0 = g.touch0[0], l0 = g.touch0[1],
+            p1 = g.touch1[0], l1 = g.touch1[1],
+            dp = (dp = p1[0] - p0[0]) * dp + (dp = p1[1] - p0[1]) * dp,
+            dl = (dl = l1[0] - l0[0]) * dl + (dl = l1[1] - l0[1]) * dl;
+        t = scale(t, Math.sqrt(dp / dl));
+        p = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
+        l = [(l0[0] + l1[0]) / 2, (l0[1] + l1[1]) / 2];
+      }
+      else if (g.touch0) p = g.touch0[0], l = g.touch0[1];
+      else return;
+
+      g.zoom("touch", constrain(translate(t, p, l), g.extent, translateExtent));
+    }
+
+    function touchended(event, ...args) {
+      if (!this.__zooming) return;
+      var g = gesture(this, args).event(event),
+          touches = event.changedTouches,
+          n = touches.length, i, t;
+
+      nopropagation(event);
+      if (touchending) clearTimeout(touchending);
+      touchending = setTimeout(function() { touchending = null; }, touchDelay);
+      for (i = 0; i < n; ++i) {
+        t = touches[i];
+        if (g.touch0 && g.touch0[2] === t.identifier) delete g.touch0;
+        else if (g.touch1 && g.touch1[2] === t.identifier) delete g.touch1;
+      }
+      if (g.touch1 && !g.touch0) g.touch0 = g.touch1, delete g.touch1;
+      if (g.touch0) g.touch0[1] = this.__zoom.invert(g.touch0[0]);
+      else {
+        g.end();
+        // If this was a dbltap, reroute to the (optional) dblclick.zoom handler.
+        if (g.taps === 2) {
+          t = pointer(t, this);
+          if (Math.hypot(touchfirst[0] - t[0], touchfirst[1] - t[1]) < tapDistance) {
+            var p = select(this).on("dblclick.zoom");
+            if (p) p.apply(this, arguments);
+          }
+        }
+      }
+    }
+
+    zoom.wheelDelta = function(_) {
+      return arguments.length ? (wheelDelta = typeof _ === "function" ? _ : constant(+_), zoom) : wheelDelta;
+    };
+
+    zoom.filter = function(_) {
+      return arguments.length ? (filter = typeof _ === "function" ? _ : constant(!!_), zoom) : filter;
+    };
+
+    zoom.touchable = function(_) {
+      return arguments.length ? (touchable = typeof _ === "function" ? _ : constant(!!_), zoom) : touchable;
+    };
+
+    zoom.extent = function(_) {
+      return arguments.length ? (extent = typeof _ === "function" ? _ : constant([[+_[0][0], +_[0][1]], [+_[1][0], +_[1][1]]]), zoom) : extent;
+    };
+
+    zoom.scaleExtent = function(_) {
+      return arguments.length ? (scaleExtent[0] = +_[0], scaleExtent[1] = +_[1], zoom) : [scaleExtent[0], scaleExtent[1]];
+    };
+
+    zoom.translateExtent = function(_) {
+      return arguments.length ? (translateExtent[0][0] = +_[0][0], translateExtent[1][0] = +_[1][0], translateExtent[0][1] = +_[0][1], translateExtent[1][1] = +_[1][1], zoom) : [[translateExtent[0][0], translateExtent[0][1]], [translateExtent[1][0], translateExtent[1][1]]];
+    };
+
+    zoom.constrain = function(_) {
+      return arguments.length ? (constrain = _, zoom) : constrain;
+    };
+
+    zoom.duration = function(_) {
+      return arguments.length ? (duration = +_, zoom) : duration;
+    };
+
+    zoom.interpolate = function(_) {
+      return arguments.length ? (interpolate = _, zoom) : interpolate;
+    };
+
+    zoom.on = function() {
+      var value = listeners.on.apply(listeners, arguments);
+      return value === listeners ? zoom : value;
+    };
+
+    zoom.clickDistance = function(_) {
+      return arguments.length ? (clickDistance2 = (_ = +_) * _, zoom) : Math.sqrt(clickDistance2);
+    };
+
+    zoom.tapDistance = function(_) {
+      return arguments.length ? (tapDistance = +_, zoom) : tapDistance;
+    };
+
+    return zoom;
   }
 
   var d3$1 = {
@@ -10350,7 +10931,7 @@
 
   var css = {
     card: "\n\t  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);\n\t  position: relative;\n\t  left: 0px;\n\t  top: 0px;\n\t  display: inline-block;\n\t",
-    cardHeader: "\n\t  width: 100%;\n\t  background-color: gainsboro;\n\t  cursor: grab;\n\t  display: inline-block;\n\t",
+    cardHeader: "\n\t  width: 100%;\n\t  background-color: white;\n\t  cursor: grab;\n\t  display: inline-block;\n\t",
     plotTitle: "\n\t  width: 80%;\n      overflow: hidden; \n      white-space: nowrap; \n      text-overflow: ellipsis;\n\t  display: inline-block;\n\t  cursor: text;\n\t  margin: 8px 0px 0px 4px;\n\t",
     // Buttons
     btn: "\n\t  border: none;\n\t  border-radius: 12px;\n\t  text-align: center;\n\t  text-decoration: none;\n\t  display: inline-block;\n\t  font-size: 20px;\n\t  margin: 4px 2px;\n\t  cursor: pointer;\n    ",
@@ -10358,7 +10939,7 @@
     btnDanger: "\n\t  background-color: crimson;\n\t  color: white;\n\t  float: right;\n    "
   }; // css
 
-  var template$3 = "\n\t<div style=\"".concat(css.card, "\">\n\t\t<div class=\"card-header\" style=\"").concat(css.cardHeader, "\">\n\t\t\t<h4 class=\"card-title\" spellcheck=\"false\" contenteditable=\"true\" style=\"").concat(css.plotTitle, "\">This is a new plot.</h4>\n\t\t\t\n\t\t\t<button class=\"close\" style=\"").concat(css.btn + css.btnDanger, "\">x</button>\n\t\t</div>\n\t\t\n\t\t<div class=\"card-body\">\n\t\t\n\t\t</div>\n\t</div>\n"); // template
+  var template$4 = "\n\t<div style=\"".concat(css.card, "\">\n\t\t<div class=\"card-header\" style=\"").concat(css.cardHeader, "\">\n\t\t\t<h4 class=\"card-title\" spellcheck=\"false\" contenteditable=\"true\" style=\"").concat(css.plotTitle, "\">This is a new plot.</h4>\n\t\t\t\n\t\t\t<button class=\"close\" style=\"").concat(css.btn + css.btnDanger, "\">x</button>\n\t\t</div>\n\t\t\n\t\t<div class=\"card-body\">\n\t\t\n\t\t</div>\n\t</div>\n"); // template
 
   var dbsliceCrossfilterPlot = /*#__PURE__*/function (_dragnode) {
     _inherits(dbsliceCrossfilterPlot, _dragnode);
@@ -10389,7 +10970,7 @@
       // Instantiate a completely new element.
 
 
-      var wrapper = html2element(template$3); // The dragging should only be available through the header.
+      var wrapper = html2element(template$4); // The dragging should only be available through the header.
 
       _this = _super.call(this, wrapper, wrapper.querySelector("div.card-header"));
 
@@ -10475,16 +11056,19 @@
   scales
   */
 
-  var textattributes = "fill=\"black\" font-size=\"10px\" font-weight=\"bold\""; // text -> x="-8" / y="-0.32em"
+  var textattributes = "fill=\"black\" font-size=\"10px\" font-weight=\"bold\"";
+  var exponenttemplate = "\n<text class=\"linear\" ".concat(textattributes, ">\n\t<tspan>\n\t  x10\n\t  <tspan class=\"exp\" dy=\"-5\"></tspan>\n\t</tspan>\n</text>\n");
+  var logtemplate = "\n<text class=\"log\" ".concat(textattributes, " display=\"none\">\n\t<tspan>\n\t  log\n\t  <tspan class=\"base\" dy=\"5\">10</tspan>\n\t  <tspan class=\"eval\" dy=\"-5\">(x)</tspan>\n\t</tspan>\n</text>\n"); // text -> x="-8" / y="-0.32em"
 
-  var template$2 = "\n\t<g class=\"graphic\"></g>\n\t<g class=\"exponent\">\n\t\t<text ".concat(textattributes, ">\n\t\t\t<tspan>\n\t\t\t  x10\n\t\t\t  <tspan class=\"exp\" dy=\"-5\"></tspan>\n\t\t\t</tspan>\n\t\t</text>\n\t</g>\n\t<g class=\"controls\">\n\t\t<text class=\"plus hover-highlight\" ").concat(textattributes, ">+</text>\n\t\t<text class=\"minus hover-highlight\" ").concat(textattributes, ">-</text>\n\t</g>\n\t<g class=\"variable-change\">\n\t\t<text class=\"label hover-highlight\" ").concat(textattributes, ">Variable name</text>\n\t</g>\n"); // The exponent should be replaced with the logarithmic controls if the axis switches from linear to log.
+  var template$3 = "\n\t<g class=\"graphic\"></g>\n\t\n\t<g class=\"model-controls\">\n\t\t".concat(exponenttemplate, "\n\t\t").concat(logtemplate, "\n\t</g>\n\t<g class=\"domain-controls\">\n\t\t<text class=\"plus hover-highlight\" ").concat(textattributes, ">+</text>\n\t\t<text class=\"minus hover-highlight\" ").concat(textattributes, ">-</text>\n\t</g>\n\t<g class=\"variable-controls\">\n\t\t<text class=\"label hover-highlight\" ").concat(textattributes, " text-anchor=\"end\">Variable name</text>\n\t</g>\n"); // The exponent should be replaced with the logarithmic controls if the axis switches from linear to log.
   // Now I need to add in a label saying linear/log
   // DONE!! Maybe a plus/minus next to the axes to increase the axis limits - instead of dragging the labels.
-  // Maybe it'd be better
+  // The changing between the variables is done in the parent, and not in the axis. This is simply because this class only controls it's own node, and there isn't space to show all the options. Therefore the parent must allocate the space for the change of variables.
+  // How to change between the scale interpretations? What should I click? Maybe the exponent text? But then it should always be visible. Let's try that yes. But how to differentiate between clicking on hte text, and editing the text??
 
   var ordinalAxis = /*#__PURE__*/function () {
     // These margins are required to completely fit the scales along with their labels, ticks and domain lines onto the plot.
-    function ordinalAxis(axis, plotbox, initvariable, ordinalvariables) {
+    function ordinalAxis(axis, plotbox, initvariable) {
       _classCallCheck(this, ordinalAxis);
 
       this.type = "linear";
@@ -10497,33 +11081,39 @@
       };
       /* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `ordinalvariable' is a dbslice ordinal variable which is paired with this axis. */
 
-      var obj = this; // Get rid of axis by abstracting?
+      var obj = this; // make the axis group.
+
+      obj.d3node = create$1("svg:g").attr("class", "".concat(axis, "-axis")).html(template$3);
+      obj.node = obj.d3node.node(); // Get rid of axis by abstracting?
 
       obj.axis = axis;
-      obj.setplotbox(plotbox);
-      obj.variable = initvariable;
-      obj.variableoptions = ordinalvariables; // Before setting the initial range extend it by 10% on either side to make sure the data fits neatly inside.
+      obj.setplotbox(plotbox); // Set the variable.
 
-      var domaindiff = initvariable.extent[1] - initvariable.extent[0];
-      obj.setdomain([initvariable.extent[0] - domaindiff, initvariable.extent[1] + domaindiff]); // When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
-      // The vertical position of the axis doesn't actually depend on the range. The y-position for the x axis should be communicated from outside. The axis should always get the x and y dimesnion of the svg we're placing it on.
+      obj.variable = initvariable; // Add the functionality to the domain change.
 
-      obj.d3node = create$1("svg:g").attr("class", "axis").html(template$2); // Add the functionality to the domain change.
-
-      var controls = obj.d3node.select("g.controls");
+      var controls = obj.d3node.select("g.domain-controls");
       controls.select("text.plus").on("click", function () {
         obj.plusdomain();
       });
       controls.select("text.minus").on("click", function () {
         obj.minusdomain();
+      }); // Add teh functionality to toggle the axis type.
+
+      var exponent = obj.d3node.select("g.model-controls");
+      exponent.on("click", function () {
+        obj.toggleaxistype();
       });
       makeObservable(obj, {
+        _variable: observable,
         domain: observable,
         plotbox: observable,
+        type: observable,
         setplotbox: action,
         setdomain: action,
         plusdomain: action,
         minusdomain: action,
+        toggleaxistype: action,
+        variable: computed,
         range: computed,
         scale: computed,
         exponent: computed
@@ -10535,9 +11125,33 @@
         obj.draw();
       });
     } // constructor
+    // I want to be able to set the variable from outside, and have the axis refresh itself accordingly. `variable' was made a computed because mobx then treats the setter as an acion, and the getter as a computed.
 
 
     _createClass$1(ordinalAxis, [{
+      key: "variable",
+      get: // variable
+      function get() {
+        // The the get variable can be a computed, and the variable will be observable anyway.
+        // Why doesn't this one compute correctly??
+        console.log("compute variable for ".concat(this.axis, " axis"));
+        return this._variable;
+      } // variable
+      // Drawing of the svg axes.
+      ,
+      set: function set(variable) {
+        // Set a new variable for the axis.
+        var obj = this; // Change the variable name.
+
+        var variableselect = obj.d3node.select("g.variable-controls");
+        variableselect.select("text.label").html(variable.name); // Change the domain. Before setting the initial domain extend it by 10% on either side to make sure the data fits neatly inside.
+
+        var domaindiff = 0 * (variable.extent[1] - variable.extent[0]);
+        obj.setdomain([variable.extent[0] - 0.1 * domaindiff, variable.extent[1] + 0.1 * domaindiff]); // Need to sotre it under an anonymous name so it doesn't recursively call this function.
+
+        obj._variable = variable;
+      }
+    }, {
       key: "position",
       value: function position() {
         // If the range changes, then the location of the axes must change also. And with them the exponents should change location.
@@ -10547,12 +11161,13 @@
         var ay = obj.axis == "y" ? 0 : obj.plotbox.y[1] - obj.margin.bottom;
         obj.d3node.attr("transform", "translate(".concat(ax, ", ").concat(ay, ")")); // Reposition hte exponent.
 
-        var exponent = obj.d3node.select("g.exponent");
-        var ex = obj.axis == "y" ? 0 + 6 : obj.range[1] - 10;
-        var ey = obj.axis == "y" ? obj.margin.top + 3 : 0 - 6;
-        exponent.attr("transform", "translate(".concat(ex, ", ").concat(ey, ")")); // Reposition the +/- controls.
+        var model = obj.d3node.select("g.model-controls");
+        model.attr("text-anchor", obj.axis == "y" ? "start" : "end");
+        var mx = obj.axis == "y" ? 0 + 6 : obj.range[1];
+        var my = obj.axis == "y" ? obj.margin.top + 3 : 0 - 6;
+        model.attr("transform", "translate(".concat(mx, ", ").concat(my, ")")); // Reposition the +/- controls.
 
-        var controls = obj.d3node.select("g.controls");
+        var controls = obj.d3node.select("g.domain-controls");
         var cx = obj.axis == "y" ? 0 - 5 : obj.range[1] + 10;
         var cy = obj.axis == "y" ? obj.margin.top - 10 : 0 + 5;
         controls.attr("transform", "translate(".concat(cx, ", ").concat(cy, ")")); // Reposition hte actual plus/minus.
@@ -10566,11 +11181,10 @@
         controls.select("text.minus").attr("dy", dyMinus);
         controls.select("text.minus").attr("dx", dxMinus); // Position the variable label.
 
-        var labelgroup = obj.d3node.select("g.variable-change");
+        var labelgroup = obj.d3node.select("g.variable-controls");
         var label = labelgroup.select("text.label"); // The text should be flush with the axis. To allow easier positioning use the `text-anchor' property.
 
-        var textanchor = obj.axis == "y" ? "end" : "end";
-        label.attr("text-anchor", textanchor).attr("writing-mode", obj.axis == "y" ? "tb" : "lr");
+        label.attr("writing-mode", obj.axis == "y" ? "tb" : "lr");
         var lx = obj.axis == "y" ? 30 : obj.range[1];
         var ly = obj.axis == "y" ? -obj.margin.top : 30;
         var la = obj.axis == "y" ? 180 : 0;
@@ -10578,10 +11192,88 @@
       } // position
 
     }, {
+      key: "draw",
+      value: function draw() {
+        var obj = this;
+        obj.d3node.selectAll("g.model-controls").select("text").attr("fill", obj.exponent > 0 ? "black" : "black").select("tspan.exp").html(obj.exponent); // A different scale is created for drawing to allow specific labels to be created (e.g. for scientific notation with the exponent above the axis.)	
+
+        var d3axis = obj.axis == "y" ? axisLeft : axisBottom;
+        obj.d3node.select("g.graphic").call(d3axis(obj.scale)); // Control the ticks. Mak
+
+        obj.d3node.select("g.graphic").selectAll("text").html(function (d) {
+          return obj.tickformat(d);
+        });
+      } // draw
+      // MOVE ALL THESE SWITCHES SOMEWHERE ELSE. MAYBE JUST CREATE A SUPPORTED OBJECT OUTSIDE SO ALL THE SMALL CHANGES CAN BE HANDLED THERE.
+
+    }, {
+      key: "tickformat",
+      value: function tickformat(d) {
+        // By default the tick values are assigned to all tick marks. Just control what appears in hte labels.
+        var obj = this;
+        var label;
+
+        switch (obj.type) {
+          case "log":
+            // Only orders of magnitude. Keep an eye out for number precision when dividing logarithms!
+            var res = Math.round(Math.log(d) / Math.log(obj.scale.base()) * 1e6) / 1e6; // Counting ticks doesn't work, because the ticks don't necessarily begin with the order of magnitude tick.
+
+            label = Number.isInteger(res) ? d : "";
+            break;
+
+          case "linear":
+            // All of them, but adjusted by the common exponent. 
+            label = d / Math.pow(10, obj.exponent);
+            break;
+        } // switch
+
+
+        return label;
+      } // tickformat
+
+    }, {
+      key: "getdrawvalue",
+      value: function getdrawvalue(d) {
+        // This is just implemented for more strict control of wht this axis can do. It's not strictly needed because the scale underneath is not being changed.
+        // Needs the current object as it evaluates the incoming value using the current scale.
+        var obj = this; // Return only the value of the current axis selection.
+
+        return obj.scale(d[obj.variable.name]);
+      } // getdrawvalue
+      // Getting values required to setup the scales.
+
+    }, {
+      key: "scale",
+      get: function get() {
+        // Computed value based on hte selected scale type.
+        var obj = this;
+        var scale;
+
+        switch (obj.type) {
+          case "log":
+            scale = log();
+            break;
+
+          case "linear":
+          default:
+            scale = linear();
+            break;
+        } // switch
+        // If the domain is below zero always Math.abs it to work with positive values.
+        // The domain of this one  goes below zero... It's because the domain was extended there!! Ah, will this break the zooming and panning below zero?? Probably no? Logs aren't defined for negtive values anyway? So what do I do in those cases? Do I just add a translation in the data? For now just
+        // Deal with the exponent. Will this require accessor functions?? This means that there should be another
+        // I will want the axis configuration to be stored and communicated further to pass into a python module. How will I do that? For that I'll need to evaluate teh data passed into the module. So I should use an evaluator anyway. Where should this evaluator be present? It should be present in the plot. The axis should return the parameters required for the evaluation. But it also needs to return the scale to be used for drawing. Actually, it just needs to present the draw value given some input. So just have that exposed? And a general evaluator that can handle any combination of inputs?
+
+
+        scale.range(obj.range).domain(obj.domain);
+        return scale;
+      } // get scale
+
+    }, {
       key: "range",
       get: function get() {
         // When initialising a new range - e.g. on plot rescaling, the scales need to change
-        var obj = this;
+        var obj = this; // When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
 
         if (obj.axis == "y") {
           // The browsers coordinate system runs from top of page to bottom. This is opposite from what we're used to in engineering charts. Reverse the range for hte desired change.
@@ -10596,8 +11288,10 @@
     }, {
       key: "setplotbox",
       value: function setplotbox(plotbox) {
+        // The vertical position of the axis doesn't actually depend on the range. The y-position for the x axis should be communicated from outside. The axis should always get the x and y dimesnion of the svg we're placing it on.
         this.plotbox = plotbox;
       } // plotbox
+      // Domain changes
 
     }, {
       key: "setdomain",
@@ -10632,29 +11326,13 @@
 
         this.domain = [currentdomain[0], currentdomain[1] - tickdiff];
       } // minusdomain
-
-    }, {
-      key: "scale",
-      get: function get() {
-        // Computed value based on hte selected scale type.
-        var obj = this;
-        var scale;
-
-        switch (obj.type) {
-          case "log":
-            scale = log();
-            break;
-
-          case "linear":
-          default:
-            scale = linear();
-            break;
-        } // switch
-
-
-        scale.range(obj.range).domain(obj.domain);
-        return scale;
-      } // get scale
+      // Creating model variables.
+      // This exponent should be reworked to just return the transformation configuration.
+      // Difference between the tick labels, and the data for evaluation. For the evaluation whatever is displayed on hte axes should be passed to the model. But the exponent is just a cosmetic change.
+      // Can also use the exponent to guess what space we should be viewing the data in? Maybe not. For example erroneous values.
+      // Difference between a log scale transformation and a log scale axis. The log axis still shows the exact same values, whereas the transform will create new values. Do I want to differentiate between the two, or just apply a log transformation if the data is visualised with a log scale? Even if the data is in hte log scale the user may still want to use it as such?
+      // Still connect both - what you see is what you get. But on hte log plot maybe still keep the original labels?? Let's see how it goes.
+      // So if I have an exponent do I change the domain? But the exponent depends on the domain...Create a labelaxis just to draw the labels??
 
     }, {
       key: "exponent",
@@ -10663,48 +11341,162 @@
 
         if (obj.domain.length > 0) {
           var maxExp = calculateExponent(obj.domain[1]);
-          var minExp = calculateExponent(obj.domain[0]);
-          return maxExp - minExp > 3 ? 3 : minExp;
+          var minExp = calculateExponent(obj.domain[0]); // Which exponent to return? It has to be a multiple of three - guaranteed by calculateExponent.
+          // -10.000 - 10.000 -> 3
+          // 0 - 10.000 -> 3
+          // 0 - 1.000.000 -> 3 - to minimize string length?
+          // 
+          // If the order of magnitude is a factor of 3 then return the maximum one. e.g. range of 100 - 100.000 go for 3 to reduce teh string length
+
+          return maxExp - minExp >= 3 ? maxExp : minExp;
         } else {
           return 0;
         } // if
 
       } // exponent
+      // Changing the scale type. Click on the exponent to change the 
 
     }, {
-      key: "draw",
-      value: function draw() {
+      key: "nexttype",
+      value: function nexttype(type) {
+        // Sequence of axis types.
+        var sequence = ["linear", "log"];
+        var imax = sequence.length - 1;
+        var inext = sequence.indexOf(type) + 1;
+        var i = inext > imax ? inext - imax - 1 : inext;
+        return sequence[i];
+      } // nexttype
+
+    }, {
+      key: "toggleaxistype",
+      value: function toggleaxistype() {
+        // Toggle the axis type. How do I do that?? Ah, just change the type.
         var obj = this;
-        obj.d3node.selectAll("g.exponent").select("text").attr("fill", obj.exponent > 0 ? "black" : "none").select("tspan.exp").html(obj.exponent);
-        var d3axis = obj.axis == "y" ? axisLeft : axisBottom;
-        obj.d3node.select("g.graphic").call(d3axis(obj.scale));
-      } // draw
-      // Not referenced!!
+        var newtype = obj.nexttype(obj.type); // If the switch is to log the domain needs to be changed to be positive. So: don't allow the change to log. If the user wants to use a log transformation on the data they need to first et it in the right range.
 
-    }, {
-      key: "updateticks",
-      value: function updateticks() {
-        var obj = this; // x\y ew-resize\ns-resize
+        var extent = obj.variable.extent;
+        var invalidExtent = extent[0] * extent[1] <= 0;
 
-        obj.d3node.selectAll(".tick").selectAll("text").style("cursor", "ew-resize"); // Resolve the tick texts getting bold through CSS!!
-      } // updateticks
+        if (newtype == "log" && invalidExtent) {
+          // Move to next type.
+          newtype = obj.nexttype(newtype);
+        } // if
+        // Always switch back to the original domain.
+
+
+        obj.setdomain(obj.variable.extent); // Switch between the model controls.
+
+        var modelcontrols = obj.d3node.select("g.model-controls");
+        modelcontrols.selectAll("text").attr("display", "none");
+        modelcontrols.select("text." + newtype).attr("display", "");
+        obj.type = newtype;
+      } // toggleaxistype
 
     }]);
 
     return ordinalAxis;
   }(); // axis
 
-  /*
-  background: elements for background functionality (e.g. zoom rectangle)
-  data      : primary data representations
-  markup    : non-primary data graphic markups, (e.g. compressor map chics) 
-  x/y-axis  : x/y axis elements
-  exponent  : power exponent (big number labels may overlap otherwise)
-  */
+  var variablemenustyle = "\n  background-color: white;\n  border: 2px solid black;\n  border-radius: 5px;\n  display: none; \n  position: absolute;\n  max-height: 120px;\n  overflow-y: auto;\n";
+  var ulstyle = "\n  list-style-type: none;\n  font-size: 10px;\n  font-weight: bold;\n  padding-left: 4px;\n  padding-right: 4px;\n";
+  var template$2 = "\n<div class=\"variable-select-menu\" style=\"".concat(variablemenustyle, "\">\n  <ul style=\"").concat(ulstyle, "\">\n  </ul>\n</div>\n"); // Differentite between an x and a y one.
 
-  var template$1 = "\n\t<svg class=\"plot-area\" width=\"400\" height=\"400\">\n\t\t\n\t\t<g class=\"background\">\n\t\t\t<clipPath>\n\t\t\t\t<rect></rect>\n\t\t\t</clipPath>\n\t\t\t\n\t\t\t<rect class=\"zoom-area\" fill=\"rgb(255, 255, 255)\" width=\"400\" height=\"400\"></rect>\n\t\t\t\n\t\t\t<g class=\"tooltip-anchor\">\n\t\t\t\t<circle class=\"anchor-point\" r=\"1\" opacity=\"0\"></circle>\n\t\t\t</g>\n\t\t</g>\n\t\t\n\t\t<g class=\"data\"></g>\n\t\t<g class=\"markup\"></g>\n\t\t\n\t\t\n\t</svg>\n"; // The axis scale needs to have access to the data and to the svg dimensions. Actually not access to the data, but access to the data extent. This has been solved by adding calculated extents to the variable objects.
+  var divSelectMenu = /*#__PURE__*/function () {
+    function divSelectMenu(axis) {
+      _classCallCheck(this, divSelectMenu);
+
+      this._variables = [];
+      this._current = undefined;
+      var obj = this;
+      obj.node = html2element(template$2); // The position of the menu is fully set outside of this class.
+      // enter().append() doesn't work for unattached elements. So what do? Make menu first, attach variables later? Make them as html elements and do the lookup for hte right data within the class?
+      // Use d3 to create the options as that allows data to be bound to the HTML elements.
+
+      makeObservable(obj, {
+        _variables: observable,
+        _current: observable,
+        variables: computed,
+        current: computed
+      });
+      autorun(function () {
+        obj.update();
+      });
+    } // constructor
+    // Getters and setters to get an observable attributed that can be assigned as an action.
+
+
+    _createClass$1(divSelectMenu, [{
+      key: "variables",
+      get: // set variables
+      function get() {
+        return this._variables;
+      } // get variables
+      ,
+      set: function set(variables) {
+        if (!this._current) {
+          this.current = variables[0];
+        } // if
+
+
+        this._variables = variables;
+      }
+    }, {
+      key: "current",
+      get: // current
+      function get() {
+        return this._current;
+      } // current
+      ,
+      set: function set(d) {
+        this._current = d;
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        var obj = this; // First remove all li.
+
+        var ul = obj.node.querySelector("ul");
+
+        while (ul.lastChild) {
+          ul.removeChild(ul.lastChild);
+        } // while
+        // Now add in the needed li objects.
+
+
+        obj.variables.forEach(function (variable) {
+          var t = "<li class=\"hover-highlight\">".concat(variable.name, "</li>");
+          var li = html2element(t);
+          ul.appendChild(li);
+          li.addEventListener("click", function (event) {
+            obj.current = variable;
+            obj.hide();
+          });
+        });
+      } // update
+
+    }, {
+      key: "show",
+      value: function show() {
+        var obj = this;
+        obj.node.style.display = "inline-block";
+      } // show
+
+    }, {
+      key: "hide",
+      value: function hide() {
+        var obj = this;
+        obj.node.style.display = "none";
+      } // hide
+
+    }]);
+
+    return divSelectMenu;
+  }(); // divSelectMenu
+
+  var template$1 = "\n<div>\n\t<svg class=\"plot-area\" width=\"400\" height=\"400\">\n\t\t\n\t\t<g class=\"background\">\n\t\t\t<clipPath>\n\t\t\t\t<rect></rect>\n\t\t\t</clipPath>\n\t\t\t\n\t\t\t<rect class=\"zoom-area\" fill=\"rgb(255, 255, 255)\" width=\"400\" height=\"400\"></rect>\n\t\t\t\n\t\t\t<g class=\"tooltip-anchor\">\n\t\t\t\t<circle class=\"anchor-point\" r=\"1\" opacity=\"0\"></circle>\n\t\t\t</g>\n\t\t</g>\n\t\t\n\t\t<g class=\"data\"></g>\n\t\t<g class=\"markup\"></g>\n\t\t\n\t\t<g class=\"axes\"></g>\n\t\t\n\t\t\n\t</svg>\n\t\n\t<div class=\"variable-select-menus\"></div>\n\t\n</div>\n"; // The axis scale needs to have access to the data and to the svg dimensions. Actually not access to the data, but access to the data extent. This has been solved by adding calculated extents to the variable objects.
   // It's best to just pass all the variables to the axis, and let it handle everything connected to it. 
   // This class is a template for two interactive axes svg based plotting.
+  // Handle the variable changing here!!!
 
   var twoInteractiveAxesInset = /*#__PURE__*/function () {
     // Add some padding to the plot??
@@ -10715,18 +11507,38 @@
       this.width = 400;
       this.height = 400;
       var obj = this;
-      obj.node = html2element(template$1); // `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
+      obj.node = html2element(template$1); // Add the menu objects.
 
-      obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
-      obj.x = new ordinalAxis("x", obj.plotbox, variables[1], variables);
-      obj.node.appendChild(obj.y.d3node.node());
-      obj.node.appendChild(obj.x.d3node.node()); // Add the zooming.
+      obj.ymenu = obj.addVariableMenu(variables);
+      obj.xmenu = obj.addVariableMenu(variables); // Make the axis objects, and connect them to the menu selection.
+      // `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
 
-      obj.addZooming();
+      obj.y = new ordinalAxis("y", obj.plotbox, obj.ymenu.current);
+      obj.x = new ordinalAxis("x", obj.plotbox, obj.xmenu.current);
+      var axisContainer = obj.node.querySelector("g.axes");
+      axisContainer.appendChild(obj.y.node);
+      axisContainer.appendChild(obj.x.node); // The zooming depends on the obj.y/x scales.
+
+      obj.addZooming(); // Conytol the appearance/disappearance of the variable selection menus.
+
+      obj.addVariableMenuToggling(); // Automatically
+
+      autorun(function () {
+        obj.coordinateMenusWithAxes();
+      });
     } // constructor
 
 
     _createClass$1(twoInteractiveAxesInset, [{
+      key: "coordinateMenusWithAxes",
+      value: function coordinateMenusWithAxes() {
+        var obj = this; // When the current in the menu changes the axis should be updated.
+
+        obj.y.variable = obj.ymenu.current;
+        obj.x.variable = obj.xmenu.current;
+      } // coordinateMenusWithAxes
+
+    }, {
       key: "plotbox",
       get: function get() {
         // Specify the area of the svg dedicated to the plot. In this case it'll be all of it. The margin determines the amount of whitespace around the plot. This whitespace will NOT include the axis labels etc.
@@ -10745,6 +11557,61 @@
         };
         return plot;
       } // plotbox
+      // Wrapper functions to show the menus are implemented to facilitate custom positioning. For the y-menu this can't be achieved through CSS as the menu is appended after the SVG (placing it to the right bottom), but it needs to be positioned at the top left. Therefore it must be offset by the SVG width and height.
+      // Ah, but left/top and right/bottom are in respect to the parent!!
+
+    }, {
+      key: "xMenuShow",
+      value: function xMenuShow() {
+        var obj = this;
+        obj.xmenu.node.style.right = "10px";
+        obj.xmenu.node.style.bottom = "10px";
+        obj.xmenu.show();
+      } // xMenuShow
+
+    }, {
+      key: "yMenuShow",
+      value: function yMenuShow() {
+        var obj = this;
+        obj.ymenu.node.style.left = "5px";
+        obj.ymenu.node.style.top = "10px";
+        obj.ymenu.show();
+      } // xMenuShow
+
+    }, {
+      key: "addVariableMenu",
+      value: function addVariableMenu(variables) {
+        var obj = this; // Add the menu objects.
+
+        var menuContainer = obj.node.querySelector("div.variable-select-menus"); // Variable menu functionality;
+
+        var menu = new divSelectMenu();
+        menuContainer.appendChild(menu.node);
+        menu.variables = variables;
+        return menu;
+      } // addXVariableMenu
+
+    }, {
+      key: "addVariableMenuToggling",
+      value: function addVariableMenuToggling() {
+        // This could be abstracted further in principle.
+        var obj = this;
+        var xMenuToggle = obj.x.node.querySelector("g.variable-controls").querySelector("text.label");
+        var yMenuToggle = obj.y.node.querySelector("g.variable-controls").querySelector("text.label");
+        xMenuToggle.addEventListener("click", function (event) {
+          event.stopPropagation();
+          obj.xMenuShow();
+        });
+        yMenuToggle.addEventListener("click", function (event) {
+          event.stopPropagation();
+          obj.yMenuShow();
+        }); // If the user clicks anywhere else the menus should be hidden.
+
+        obj.node.addEventListener("click", function (event) {
+          obj.xmenu.hide();
+          obj.ymenu.hide();
+        });
+      } // addVariableMenuToggling
       // Maybe this can be an external module? But it depends directly on how the axis are specified - minimum reusability.
 
     }, {
@@ -10752,13 +11619,13 @@
       value: function addZooming() {
         var obj = this; // The current layout will keep adding on zoom. Rethink this for more responsiveness of the website.
 
-        var zoom = d3.zoom().scaleExtent([0.01, Infinity]).on("zoom", zoomed); // Zoom operates on a selection. In this case a rect has been added to the markup to perform this task.
+        var zoom$1 = zoom().scaleExtent([0.01, Infinity]).on("zoom", zoomed); // Zoom operates on a selection. In this case a rect has been added to the markup to perform this task.
 
-        d3.select(obj.node).select("g.background").select("rect.zoom-area").call(zoom); // As of now (23/03/2020) the default zoom behaviour (https://d3js.org/d3.v5.min.js) does not support independantly scalable y and x axis. If these are implemented then on first zoom action (panning or scaling) will have a movement as the internal transform vector (d3.event.transform) won't corespond to the image. 
+        select(obj.node).select("g.background").select("rect.zoom-area").call(zoom$1); // As of now (23/03/2020) the default zoom behaviour (https://d3js.org/d3.v5.min.js) does not support independantly scalable y and x axis. If these are implemented then on first zoom action (panning or scaling) will have a movement as the internal transform vector (d3.event.transform) won't corespond to the image. 
         // The transformation vector is based on the domain of the image, therefore any manual scaling of the domain should also change it. The easiest way to overcome this is to apply the transformation as a delta to the existing state.
         // obj.viewtransform is where the current state is stored. If it is set to -1, then the given zoom action is not performed to allow any difference between d3.event.transform and obj.viewtransform due to manual rescaling of the domain to be resolved.
 
-        obj.viewtransform = d3.zoomIdentity;
+        obj.viewtransform = identity;
 
         function zoomed(event) {
           // Get the current scales, and reshape them back to the origin.
@@ -10771,7 +11638,7 @@
           // Hack to get the delta transformation.
 
 
-          var dt = d3.zoomIdentity;
+          var dt = identity;
           dt.k = t.k / t0.k;
           dt.x = t.x - t0.x;
           dt.y = t.y - t0.y;
@@ -10819,7 +11686,7 @@
   */
   // The template can now hold one inset per div let's say. Maybe here I want to include a modelInputVariableSelectionInset and a twoInteractiveAxesInset. The drawing on the svg should be implemented here.
 
-  var template = "\n<div>\n\t<div class=\"model-variable-selection\"></div>\n\t<div class=\"scatterplot\"></div>\n</div>\n"; // Since the axes manage all the interactivity with variables the plot must use them to access the data to plot.
+  var template = "\n<div>\n\t<div class=\"model-variable-selection\"></div>\n\t<div class=\"scatterplot\" style=\"position: relative;\"></div>\n</div>\n"; // Since the axes manage all the interactivity with variables the plot must use them to access the data to plot.
 
   var dbsliceScatterPlot = /*#__PURE__*/function (_dbsliceCrossfilterPl) {
     _inherits(dbsliceScatterPlot, _dbsliceCrossfilterPl);
@@ -10847,24 +11714,9 @@
       autorun(function () {
         obj.draw();
       });
+      console.log(obj);
       return _this;
     } // constructor
-
-    /*
-    // Shouldn't this be moved to the plot??
-    adddata(content){
-    	// When new data is given to the plots they should update.
-    	this.data = content.data;
-    	this.variables = content.variables;
-    	
-    	// Pick an x and y variable.
-    	this.xvariable = content.variables[0];
-    	this.yvariable = content.variables[1];
-    	
-    	this.x.setdomain(d3.extent(content.data, d=>d.sepal_length))
-    	this.y.setdomain(d3.extent(content.data, d=>d.sepal_width))
-    }
-    */
     // It all works now!!
 
 
@@ -10877,15 +11729,15 @@
         var yaxis = obj.svgobj.y;
         d3.select(obj.node).select("g.data").selectAll("circle").data(obj.content.data).join(function (enter) {
           return enter.append("circle").attr("r", 5).attr("fill", "cornflowerblue").attr("cx", function (d) {
-            return xaxis.scale(d[xaxis.variable.name]);
+            return xaxis.getdrawvalue(d);
           }).attr("cy", function (d) {
-            return yaxis.scale(d[yaxis.variable.name]);
+            return yaxis.getdrawvalue(d);
           });
         }, function (update) {
           return update.attr("cx", function (d) {
-            return xaxis.scale(d[xaxis.variable.name]);
+            return xaxis.getdrawvalue(d);
           }).attr("cy", function (d) {
-            return yaxis.scale(d[yaxis.variable.name]);
+            return yaxis.getdrawvalue(d);
           });
         }, function (exit) {
           return exit.remove();

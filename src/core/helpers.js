@@ -129,7 +129,7 @@ export function fitTextToBox(text, box, dim, val){
 export function calculateExponent(val){
 	// calculate the exponent for the scientific notation.
 	var exp = 0
-	while( Math.floor( val / 10**(exp+1) ) > 0 ){ exp+=1 }
+	while( Math.floor( Math.abs( val ) / 10**(exp+1) ) > 0 ){ exp+=1 }
 	
 	// Convert the exponent to multiple of three
 	return Math.floor( exp / 3 )*3

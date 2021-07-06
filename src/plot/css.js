@@ -10,7 +10,7 @@ export let css = {
 	
 	cardHeader: `
 	  width: 100%;
-	  background-color: gainsboro;
+	  background-color: white;
 	  cursor: grab;
 	  display: inline-block;
 	`,

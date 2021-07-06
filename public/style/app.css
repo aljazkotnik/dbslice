@@ -1,4 +1,4 @@
-h1, h2, h3, h4, p, a, b, li, ol, button, tspan, text {
+h1, h2, h3, h4, p, a, b, li, ol, ul, button, tspan, text {
 	font-family: 'Roboto Condensed', sans-serif;
 }
 
@@ -30,6 +30,8 @@ button.btn-small {
 }
 
 
-text.hover-highlight:hover {
+.hover-highlight:hover {
 	font-size: 15px;
 }
+
+

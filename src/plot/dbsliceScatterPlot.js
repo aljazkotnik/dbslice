@@ -35,7 +35,7 @@ import {autorun} from "mobx";
 let template = `
 <div>
 	<div class="model-variable-selection"></div>
-	<div class="scatterplot"></div>
+	<div class="scatterplot" style="position: relative;"></div>
 </div>
 `
 
@@ -66,24 +66,12 @@ export default class dbsliceScatterPlot extends dbsliceCrossfilterPlot{
 		
 		autorun(()=>{obj.draw()})
 		
+		console.log(obj);
+		
 	} // constructor
 	
 	
-	/*
-	// Shouldn't this be moved to the plot??
-	adddata(content){
-		// When new data is given to the plots they should update.
-		this.data = content.data;
-		this.variables = content.variables;
-		
-		// Pick an x and y variable.
-		this.xvariable = content.variables[0];
-		this.yvariable = content.variables[1];
-		
-		this.x.setdomain(d3.extent(content.data, d=>d.sepal_length))
-		this.y.setdomain(d3.extent(content.data, d=>d.sepal_width))
-	}
-	*/
+	
 	
 	
 	// It all works now!!
@@ -102,11 +90,11 @@ export default class dbsliceScatterPlot extends dbsliceCrossfilterPlot{
 			enter => enter.append("circle")
 			  .attr("r", 5)
 			  .attr("fill", "cornflowerblue")
-			  .attr("cx", d=>xaxis.scale( d[xaxis.variable.name] ))
-			  .attr("cy", d=>yaxis.scale( d[yaxis.variable.name] )),
+			  .attr("cx", d=>xaxis.getdrawvalue(d) )
+			  .attr("cy", d=>yaxis.getdrawvalue(d) ),
 			update => update
-			  .attr("cx", d=>xaxis.scale( d[xaxis.variable.name] ))
-			  .attr("cy", d=>yaxis.scale( d[yaxis.variable.name] )),
+			  .attr("cx", d=>xaxis.getdrawvalue(d) )
+			  .attr("cy", d=>yaxis.getdrawvalue(d) ),
 			exit => exit.remove()
 		  )
 		

@@ -72,7 +72,7 @@ function arrayIncludesAll(A,B){
 function calculateExponent(val){
 	// calculate the exponent for the scientific notation.
 	var exp = 0;
-	while( Math.floor( val / 10**(exp+1) ) > 0 ){ exp+=1; }
+	while( Math.floor( Math.abs( val ) / 10**(exp+1) ) > 0 ){ exp+=1; }
 	
 	// Convert the exponent to multiple of three
 	return Math.floor( exp / 3 )*3
@@ -1074,7 +1074,7 @@ let css = {
 	
 	cardHeader: `
 	  width: 100%;
-	  background-color: gainsboro;
+	  background-color: white;
 	  cursor: grab;
 	  display: inline-block;
 	`,
@@ -1116,7 +1116,7 @@ let css = {
 }; // css
 
 // Even if the actual drawing is on a canvas the axes will still be drawn on an svg. Maybe just place the svg in the background? How should the interaction to change the space look like? The variables on hte axis also need to be changeable.
-let template$3 = `
+let template$4 = `
 	<div style="${ css.card }">
 		<div class="card-header" style="${css.cardHeader}">
 			<h4 class="card-title" spellcheck="false" contenteditable="true" style="${css.plotTitle}">This is a new plot.</h4>
@@ -1153,7 +1153,7 @@ class dbsliceCrossfilterPlot extends dragnode {
 		*/
 		
 		// Instantiate a completely new element.
-		let wrapper = html2element(template$3);
+		let wrapper = html2element(template$4);
 		
 		// The dragging should only be available through the header.
 		super( wrapper, wrapper.querySelector("div.card-header") );
@@ -1240,23 +1240,40 @@ scales
 
 let textattributes = `fill="black" font-size="10px" font-weight="bold"`;
 
+
+let exponenttemplate = `
+<text class="linear" ${textattributes}>
+	<tspan>
+	  x10
+	  <tspan class="exp" dy="-5"></tspan>
+	</tspan>
+</text>
+`;
+
+let logtemplate = `
+<text class="log" ${textattributes} display="none">
+	<tspan>
+	  log
+	  <tspan class="base" dy="5">10</tspan>
+	  <tspan class="eval" dy="-5">(x)</tspan>
+	</tspan>
+</text>
+`;
+
 // text -> x="-8" / y="-0.32em"
-let template$2 = `
+let template$3 = `
 	<g class="graphic"></g>
-	<g class="exponent">
-		<text ${textattributes}>
-			<tspan>
-			  x10
-			  <tspan class="exp" dy="-5"></tspan>
-			</tspan>
-		</text>
+	
+	<g class="model-controls">
+		${ exponenttemplate }
+		${ logtemplate }
 	</g>
-	<g class="controls">
+	<g class="domain-controls">
 		<text class="plus hover-highlight" ${textattributes}>+</text>
 		<text class="minus hover-highlight" ${textattributes}>-</text>
 	</g>
-	<g class="variable-change">
-		<text class="label hover-highlight" ${textattributes}>Variable name</text>
+	<g class="variable-controls">
+		<text class="label hover-highlight" ${textattributes} text-anchor="end">Variable name</text>
 	</g>
 `;
 
@@ -1269,7 +1286,10 @@ let template$2 = `
 
 
 
-// Maybe it'd be better
+// The changing between the variables is done in the parent, and not in the axis. This is simply because this class only controls it's own node, and there isn't space to show all the options. Therefore the parent must allocate the space for the change of variables.
+
+
+// How to change between the scale interpretations? What should I click? Maybe the exponent text? But then it should always be visible. Let's try that yes. But how to differentiate between clicking on hte text, and editing the text??
 
 class ordinalAxis{
 	
@@ -1279,48 +1299,48 @@ class ordinalAxis{
 	// These margins are required to completely fit the scales along with their labels, ticks and domain lines onto the plot.
 	margin = {top: 30, right: 30, bottom: 40, left: 40}
 	
-	constructor(axis, plotbox, initvariable, ordinalvariables){
+	constructor(axis, plotbox, initvariable){
 		/* `axis' is a flag that signals whether it should be a vertical or horizontal axis, `svgbbox' allows the axis to be appropriately positioned, and therefore define the plotting area, and `ordinalvariable' is a dbslice ordinal variable which is paired with this axis. */
 		let obj = this;
+		
+		// make the axis group.
+		obj.d3node = d3__namespace.create("svg:g")
+		  .attr("class", `${axis}-axis`)
+		  .html(template$3);
+		obj.node = obj.d3node.node();
 		
 		// Get rid of axis by abstracting?
 		obj.axis = axis;
 		obj.setplotbox(plotbox);
 		
+		// Set the variable.
 		obj.variable = initvariable;
-		obj.variableoptions = ordinalvariables;
+				
 		
-		
-		// Before setting the initial range extend it by 10% on either side to make sure the data fits neatly inside.
-		let domaindiff = initvariable.extent[1] - initvariable.extent[0];
-		obj.setdomain([
-			initvariable.extent[0] - domaindiff, 
-			initvariable.extent[1] + domaindiff
-		]);
-		
-		// When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
-		
-		// The vertical position of the axis doesn't actually depend on the range. The y-position for the x axis should be communicated from outside. The axis should always get the x and y dimesnion of the svg we're placing it on.
-		
-		
-		obj.d3node = d3__namespace.create("svg:g")
-		  .attr("class", "axis")
-		  .html(template$2);
-		  
 		
 		// Add the functionality to the domain change.
-		let controls = obj.d3node.select("g.controls");
+		let controls = obj.d3node.select("g.domain-controls");
 		controls.select("text.plus").on("click", ()=>{obj.plusdomain();});
-		controls.select("text.minus").on("click", ()=>{obj.minusdomain();});  
+		controls.select("text.minus").on("click", ()=>{obj.minusdomain();});
+		
+		// Add teh functionality to toggle the axis type.
+		let exponent = obj.d3node.select("g.model-controls");
+		exponent.on("click", ()=>{
+			obj.toggleaxistype();
+		});
 		
 		
 		mobx.makeObservable(obj, {
+			_variable: mobx.observable,
 			domain: mobx.observable,
 			plotbox: mobx.observable,
+			type: mobx.observable,
 			setplotbox: mobx.action,
 			setdomain: mobx.action,
 			plusdomain: mobx.action,
 			minusdomain: mobx.action,
+			toggleaxistype: mobx.action,
+			variable: mobx.computed,
 			range: mobx.computed,
 			scale: mobx.computed,
 			exponent: mobx.computed
@@ -1330,11 +1350,39 @@ class ordinalAxis{
 		mobx.autorun(()=>{obj.position();});
 		mobx.autorun(()=>{obj.draw();});
 		
-		
 	} // constructor
 	
 	
+	// I want to be able to set the variable from outside, and have the axis refresh itself accordingly. `variable' was made a computed because mobx then treats the setter as an acion, and the getter as a computed.
+	set variable(variable){
+		// Set a new variable for the axis.
+		let obj = this;
+		
+		// Change the variable name.
+		let variableselect = obj.d3node.select("g.variable-controls");
+		variableselect.select("text.label").html(variable.name);
+		
+		
+		// Change the domain. Before setting the initial domain extend it by 10% on either side to make sure the data fits neatly inside.
+		let domaindiff = 0*( variable.extent[1] - variable.extent[0] );
+		obj.setdomain([
+			variable.extent[0] - 0.1*domaindiff, 
+			variable.extent[1] + 0.1*domaindiff
+		]);
+		
+		// Need to sotre it under an anonymous name so it doesn't recursively call this function.
+		obj._variable = variable;
+	} // variable
 	
+	get variable(){
+		// The the get variable can be a computed, and the variable will be observable anyway.
+		// Why doesn't this one compute correctly??
+		console.log(`compute variable for ${this.axis} axis`);
+		return this._variable
+	} // variable
+	
+	
+	// Drawing of the svg axes.
 	position(){
 		// If the range changes, then the location of the axes must change also. And with them the exponents should change location.
 		let obj = this;
@@ -1345,13 +1393,14 @@ class ordinalAxis{
 		obj.d3node.attr("transform", `translate(${ax}, ${ay})` );
 		
 		// Reposition hte exponent.
-		let exponent = obj.d3node.select("g.exponent");
-		let ex = obj.axis == "y" ? 0 + 6              : obj.range[1] - 10;
-		let ey = obj.axis == "y" ? obj.margin.top + 3 : 0 - 6;
-		exponent.attr("transform", `translate(${ex}, ${ey})`);
+		let model = obj.d3node.select("g.model-controls");
+		model.attr("text-anchor", obj.axis == "y" ? "start" : "end");
+		let mx = obj.axis == "y" ? 0 + 6              : obj.range[1];
+		let my = obj.axis == "y" ? obj.margin.top + 3 : 0 - 6;
+		model.attr("transform", `translate(${mx}, ${my})`);
 		
 		// Reposition the +/- controls.
-		let controls = obj.d3node.select("g.controls");
+		let controls = obj.d3node.select("g.domain-controls");
 		let cx = obj.axis == "y" ? 0 - 5               : obj.range[1] + 10;
 		let cy = obj.axis == "y" ? obj.margin.top - 10 : 0 + 5;
 		controls.attr("transform", `translate(${cx}, ${cy})`);
@@ -1371,13 +1420,11 @@ class ordinalAxis{
 		
 		
 		// Position the variable label.
-		let labelgroup = obj.d3node.select("g.variable-change");
+		let labelgroup = obj.d3node.select("g.variable-controls");
 		let label = labelgroup.select("text.label");
 		
 		// The text should be flush with the axis. To allow easier positioning use the `text-anchor' property.
-		let textanchor = obj.axis == "y" ? "end" : "end";
-		label.attr("text-anchor",  textanchor)
-		     .attr("writing-mode", obj.axis == "y" ? "tb" : "lr");
+		label.attr("writing-mode", obj.axis == "y" ? "tb" : "lr");
 		
 		let lx = obj.axis == "y" ? 30 : obj.range[1];
 		let ly = obj.axis == "y" ? -obj.margin.top :  30;
@@ -1387,10 +1434,110 @@ class ordinalAxis{
 		
 	} // position
 	
+	draw(){
+		let obj = this;
+		
+		obj.d3node
+			.selectAll("g.model-controls")
+			.select("text")
+			  .attr("fill", obj.exponent > 0 ? "black" : "black")
+			.select("tspan.exp")
+			  .html(obj.exponent);
+			  
+		// A different scale is created for drawing to allow specific labels to be created (e.g. for scientific notation with the exponent above the axis.)	
+		let d3axis = obj.axis == "y" ? d3__namespace.axisLeft : d3__namespace.axisBottom;
+		obj.d3node.select("g.graphic")
+		  .call( d3axis( obj.scale ) );
+		  
+		// Control the ticks. Mak
+		  
+		obj.d3node
+		  .select("g.graphic")
+		  .selectAll("text")
+		  .html(d=>{return obj.tickformat(d)});
+		
+	} // draw
+	
+	
+	// MOVE ALL THESE SWITCHES SOMEWHERE ELSE. MAYBE JUST CREATE A SUPPORTED OBJECT OUTSIDE SO ALL THE SMALL CHANGES CAN BE HANDLED THERE.
+	
+	tickformat(d){
+		// By default the tick values are assigned to all tick marks. Just control what appears in hte labels.
+		let obj = this;
+		
+		let label;
+		switch(obj.type){
+			case "log":
+			  // Only orders of magnitude. Keep an eye out for number precision when dividing logarithms!
+			  let res = Math.round( Math.log(d) / Math.log(obj.scale.base()) *1e6 ) / 1e6;
+			  
+			  // Counting ticks doesn't work, because the ticks don't necessarily begin with the order of magnitude tick.
+			  
+			  label  = Number.isInteger(res) ? d : "";
+			  break;
+			case "linear":
+			  // All of them, but adjusted by the common exponent. 
+			  label = d/(10**obj.exponent);
+			  break;
+		} // switch
+		
+		
+		return label
+		
+		
+	} // tickformat
+	
+	getdrawvalue(d){
+		// This is just implemented for more strict control of wht this axis can do. It's not strictly needed because the scale underneath is not being changed.
+		
+		// Needs the current object as it evaluates the incoming value using the current scale.
+		let obj = this;
+		
+		// Return only the value of the current axis selection.
+		return obj.scale( d[obj.variable.name] )
+		
+	} // getdrawvalue
+	
+	
+	
+	// Getting values required to setup the scales.
+	get scale(){
+		// Computed value based on hte selected scale type.
+		let obj = this;
+		
+		let scale;
+		switch(obj.type){
+			case "log":
+				scale = d3__namespace.scaleLog();
+				break;
+			case "linear":
+			default:
+				scale = d3__namespace.scaleLinear();
+				break;
+			
+		} // switch
+		
+		
+		// If the domain is below zero always Math.abs it to work with positive values.
+		
+		// The domain of this one  goes below zero... It's because the domain was extended there!! Ah, will this break the zooming and panning below zero?? Probably no? Logs aren't defined for negtive values anyway? So what do I do in those cases? Do I just add a translation in the data? For now just
+		
+		// Deal with the exponent. Will this require accessor functions?? This means that there should be another
+		
+		// I will want the axis configuration to be stored and communicated further to pass into a python module. How will I do that? For that I'll need to evaluate teh data passed into the module. So I should use an evaluator anyway. Where should this evaluator be present? It should be present in the plot. The axis should return the parameters required for the evaluation. But it also needs to return the scale to be used for drawing. Actually, it just needs to present the draw value given some input. So just have that exposed? And a general evaluator that can handle any combination of inputs?
+		
+		
+		scale.range(obj.range).domain(obj.domain);
+		
+		return scale
+		
+	} // get scale
 	
 	get range(){
 		// When initialising a new range - e.g. on plot rescaling, the scales need to change
 		let obj = this;
+		
+		// When the axis is made the first tick is translated by the minimum of the range. Therefore the margin is only added when adjusting the `_range`. 
 		
 		if(obj.axis == "y"){
 			// The browsers coordinate system runs from top of page to bottom. This is opposite from what we're used to in engineering charts. Reverse the range for hte desired change.
@@ -1404,11 +1551,15 @@ class ordinalAxis{
 		
 	} // get range
 	
-	
 	setplotbox(plotbox){
+		
+		// The vertical position of the axis doesn't actually depend on the range. The y-position for the x axis should be communicated from outside. The axis should always get the x and y dimesnion of the svg we're placing it on.
+		
 		this.plotbox = plotbox;
 	} // plotbox
 	
+	
+	// Domain changes
 	setdomain(domain){
 		this.domain = domain;
 	} // domain
@@ -1444,27 +1595,23 @@ class ordinalAxis{
 	} // minusdomain
 	
 	
-	get scale(){
-		// Computed value based on hte selected scale type.
-		let obj = this;
-		
-		let scale;
-		switch(obj.type){
-			case "log":
-				scale = d3__namespace.scaleLog();
-				break;
-			case "linear":
-			default:
-				scale = d3__namespace.scaleLinear();
-				break;
-			
-		} // switch
-		
-		scale.range(obj.range).domain(obj.domain);
-		
-		return scale
-		
-	} // get scale
+	// Creating model variables.
+	
+	
+	// This exponent should be reworked to just return the transformation configuration.
+	
+	// Difference between the tick labels, and the data for evaluation. For the evaluation whatever is displayed on hte axes should be passed to the model. But the exponent is just a cosmetic change.
+	
+	// Can also use the exponent to guess what space we should be viewing the data in? Maybe not. For example erroneous values.
+	
+	// Difference between a log scale transformation and a log scale axis. The log axis still shows the exact same values, whereas the transform will create new values. Do I want to differentiate between the two, or just apply a log transformation if the data is visualised with a log scale? Even if the data is in hte log scale the user may still want to use it as such?
+	
+	// Still connect both - what you see is what you get. But on hte log plot maybe still keep the original labels?? Let's see how it goes.
+	
+	// So if I have an exponent do I change the domain? But the exponent depends on the domain...Create a labelaxis just to draw the labels??
+	
+	
+	
 	
 	get exponent(){
 		let obj = this;
@@ -1472,48 +1619,182 @@ class ordinalAxis{
 		if(obj.domain.length > 0){
 			let maxExp = calculateExponent(obj.domain[1]);
 			let minExp = calculateExponent(obj.domain[0]);
-			return (maxExp - minExp) > 3 ? 3 : minExp
+			
+			// Which exponent to return? It has to be a multiple of three - guaranteed by calculateExponent.
+			// -10.000 - 10.000 -> 3
+			// 0 - 10.000 -> 3
+			// 0 - 1.000.000 -> 3 - to minimize string length?
+			// 
+			// If the order of magnitude is a factor of 3 then return the maximum one. e.g. range of 100 - 100.000 go for 3 to reduce teh string length
+			return (maxExp - minExp) >= 3 ? maxExp : minExp
 		} else {
 			return 0
 		} // if
 	} // exponent
 	
-	draw(){
+	
+	// Changing the scale type. Click on the exponent to change the 
+	nexttype(type){
+		// Sequence of axis types.
+		let sequence = ["linear", "log"];
+		
+		let imax = sequence.length - 1;
+		let inext = sequence.indexOf(type) + 1;
+		
+		let i = inext > imax ? inext-imax-1 : inext;
+		
+		return sequence[i];
+	} // nexttype
+	
+	toggleaxistype(){
+		// Toggle the axis type. How do I do that?? Ah, just change the type.
 		let obj = this;
 		
-		obj.d3node
-			.selectAll("g.exponent")
-			.select("text")
-			  .attr("fill", obj.exponent > 0 ? "black" : "none")
-			.select("tspan.exp")
-			  .html(obj.exponent);
-			  
-		let d3axis = obj.axis == "y" ? d3__namespace.axisLeft : d3__namespace.axisBottom;
-		obj.d3node.select("g.graphic")
-		  .call( d3axis( obj.scale ) );
-		
-	} // draw
-	
-	
-	
-	// Not referenced!!
-	updateticks(){
-		
-		let obj = this;
+		let newtype = obj.nexttype(obj.type);
 		
 		
-		// x\y ew-resize\ns-resize
-		obj.d3node
-		   .selectAll(".tick")
-		   .selectAll("text")
-			 .style("cursor", "ew-resize");
-		     
-		// Resolve the tick texts getting bold through CSS!!
+		// If the switch is to log the domain needs to be changed to be positive. So: don't allow the change to log. If the user wants to use a log transformation on the data they need to first et it in the right range.
+		let extent = obj.variable.extent;
+		let invalidExtent = extent[0]*extent[1] <= 0;
+		if(newtype == "log" && invalidExtent){
+			// Move to next type.
+			newtype = obj.nexttype(newtype);
+		} // if
 		
-	} // updateticks
-	
+		// Always switch back to the original domain.
+		obj.setdomain(obj.variable.extent);
+		
+		// Switch between the model controls.
+		let modelcontrols = obj.d3node.select("g.model-controls");
+		modelcontrols.selectAll("text").attr("display", "none");
+		modelcontrols.select("text." + newtype).attr("display", "");
+		
+		obj.type = newtype;
+	} // toggleaxistype
+
 
 } // axis
+
+// A custom select menu to facilitate the variable selection in menus.
+
+let variablemenustyle = `
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 5px;
+  display: none; 
+  position: absolute;
+  max-height: 120px;
+  overflow-y: auto;
+`;
+
+let ulstyle = `
+  list-style-type: none;
+  font-size: 10px;
+  font-weight: bold;
+  padding-left: 4px;
+  padding-right: 4px;
+`;
+
+
+let template$2 = `
+<div class="variable-select-menu" style="${variablemenustyle}">
+  <ul style="${ulstyle}">
+  </ul>
+</div>
+`;
+
+
+// Differentite between an x and a y one.
+
+class divSelectMenu{
+	_variables = []
+	_current = undefined
+	
+	constructor(axis){
+		let obj = this;
+		
+		
+		obj.node = html2element(template$2);
+		
+		
+		// The position of the menu is fully set outside of this class.
+		
+		// enter().append() doesn't work for unattached elements. So what do? Make menu first, attach variables later? Make them as html elements and do the lookup for hte right data within the class?
+		
+		// Use d3 to create the options as that allows data to be bound to the HTML elements.
+		mobx.makeObservable(obj, {
+			_variables: mobx.observable,
+			_current: mobx.observable,
+			variables: mobx.computed,
+			current: mobx.computed
+		});
+		
+		mobx.autorun(()=>{obj.update();});
+		
+		
+	} // constructor
+	
+	
+	// Getters and setters to get an observable attributed that can be assigned as an action.
+	set variables(variables){
+		if(!this._current){
+			this.current = variables[0];
+		} // if
+		this._variables = variables;
+	} // set variables
+	
+	get variables(){
+		return this._variables
+	} // get variables
+	
+	
+	set current(d){
+		this._current = d;
+	} // current
+	
+	get current(){
+		return this._current;
+	} // current
+	
+	
+	
+	update(){
+		let obj = this;
+		
+		// First remove all li.
+		let ul = obj.node.querySelector("ul");
+		while (ul.lastChild) {
+			ul.removeChild(ul.lastChild);
+		} // while
+		
+		
+		// Now add in the needed li objects.
+		obj.variables.forEach(variable=>{
+			let t = `<li class="hover-highlight">${variable.name}</li>`;
+			let li = html2element(t);
+			ul.appendChild(li);
+			
+			li.addEventListener("click", event=>{
+				obj.current = variable;
+				obj.hide();
+			});
+		});
+	} // update
+	
+	
+	
+	
+	show(){
+		let obj = this;
+		obj.node.style.display = "inline-block";
+	} // show
+	
+	hide(){
+		let obj = this;
+		obj.node.style.display = "none";
+	} // hide
+	
+} // divSelectMenu
 
 /*
 A multipurpose scatterplot inset. This will be a first step towards developing separate `twoplotaxis' inset, and a redering inset that will actually draw.
@@ -1526,17 +1807,8 @@ Children (scaterplot, line) should have lasso selection. In the case of the line
 */
 
 
-
-
-
-/*
-background: elements for background functionality (e.g. zoom rectangle)
-data      : primary data representations
-markup    : non-primary data graphic markups, (e.g. compressor map chics) 
-x/y-axis  : x/y axis elements
-exponent  : power exponent (big number labels may overlap otherwise)
-*/
 let template$1 = `
+<div>
 	<svg class="plot-area" width="400" height="400">
 		
 		<g class="background">
@@ -1554,8 +1826,14 @@ let template$1 = `
 		<g class="data"></g>
 		<g class="markup"></g>
 		
+		<g class="axes"></g>
+		
 		
 	</svg>
+	
+	<div class="variable-select-menus"></div>
+	
+</div>
 `;
 
 
@@ -1568,7 +1846,7 @@ let template$1 = `
 // This class is a template for two interactive axes svg based plotting.
 
 
-
+// Handle the variable changing here!!!
 
 class twoInteractiveAxesInset{
 	
@@ -1585,22 +1863,51 @@ class twoInteractiveAxesInset{
 	constructor(variables){
 		let obj = this;
 		
+		
+		
+		
 		obj.node = html2element(template$1);
 		
+		
+		// Add the menu objects.
+		obj.ymenu = obj.addVariableMenu(variables);
+		obj.xmenu = obj.addVariableMenu(variables);
+		
+		
+		// Make the axis objects, and connect them to the menu selection.
 		// `obj.plotbox' specifies the area of the SVG that the chart should be drawn to.
-		obj.y = new ordinalAxis("y", obj.plotbox, variables[0], variables);
-		obj.x = new ordinalAxis("x", obj.plotbox, variables[1], variables);
+		obj.y = new ordinalAxis("y", obj.plotbox, obj.ymenu.current);
+		obj.x = new ordinalAxis("x", obj.plotbox, obj.xmenu.current);
+		
+		let axisContainer = obj.node.querySelector("g.axes");
+		axisContainer.appendChild(obj.y.node);
+		axisContainer.appendChild(obj.x.node);
 		
 		
-		obj.node.appendChild(obj.y.d3node.node());
-		obj.node.appendChild(obj.x.d3node.node());
 		
-		// Add the zooming.
+		// The zooming depends on the obj.y/x scales.
 		obj.addZooming();
+		
+		
+		// Conytol the appearance/disappearance of the variable selection menus.
+		obj.addVariableMenuToggling();
+		
+		
+		// Automatically
+		mobx.autorun(()=>{obj.coordinateMenusWithAxes();});
 		
 	
 	} // constructor
 	
+	
+	coordinateMenusWithAxes(){
+		let obj = this;
+		
+		// When the current in the menu changes the axis should be updated.
+		obj.y.variable = obj.ymenu.current;
+		obj.x.variable = obj.xmenu.current;
+		
+	} // coordinateMenusWithAxes
 	
 	
 	get plotbox(){
@@ -1619,16 +1926,82 @@ class twoInteractiveAxesInset{
 	} // plotbox
 	
 	
+	// Wrapper functions to show the menus are implemented to facilitate custom positioning. For the y-menu this can't be achieved through CSS as the menu is appended after the SVG (placing it to the right bottom), but it needs to be positioned at the top left. Therefore it must be offset by the SVG width and height.
+	// Ah, but left/top and right/bottom are in respect to the parent!!
+	xMenuShow(){
+		let obj = this;
+		
+		obj.xmenu.node.style.right = "10px";
+		obj.xmenu.node.style.bottom = "10px";
+		
+		obj.xmenu.show();
+	} // xMenuShow
+	
+	yMenuShow(){
+		let obj = this;
+		
+		obj.ymenu.node.style.left = "5px";
+		obj.ymenu.node.style.top = "10px";
+		
+		obj.ymenu.show();
+	} // xMenuShow
+	
+	
+	addVariableMenu(variables){
+		let obj = this;
+		
+		// Add the menu objects.
+		let menuContainer = obj.node.querySelector("div.variable-select-menus");
+		
+		// Variable menu functionality;
+		let menu = new divSelectMenu();
+		menuContainer.appendChild(menu.node);
+		menu.variables = variables;
+		
+		return menu
+	} // addXVariableMenu
+	
+	
+	addVariableMenuToggling(){
+		// This could be abstracted further in principle.
+		let obj = this;
+		
+		let xMenuToggle = obj.x.node
+		  .querySelector("g.variable-controls")
+		  .querySelector("text.label");
+		let yMenuToggle = obj.y.node
+		  .querySelector("g.variable-controls")
+		  .querySelector("text.label");
+		
+		
+		xMenuToggle.addEventListener("click", (event)=>{
+		  event.stopPropagation();
+		  obj.xMenuShow();
+		});
+		
+		yMenuToggle.addEventListener("click", (event)=>{
+		  event.stopPropagation();
+		  obj.yMenuShow();
+		});
+		
+		// If the user clicks anywhere else the menus should be hidden.
+		obj.node.addEventListener("click", (event)=>{
+			obj.xmenu.hide();
+			obj.ymenu.hide();
+		});
+		
+	} // addVariableMenuToggling
+	
 	
 	// Maybe this can be an external module? But it depends directly on how the axis are specified - minimum reusability.
 	addZooming(){
 		let obj = this;
 		
 		// The current layout will keep adding on zoom. Rethink this for more responsiveness of the website.
-		let zoom = d3.zoom().scaleExtent([0.01, Infinity]).on("zoom", zoomed);
+		let zoom = d3__namespace.zoom().scaleExtent([0.01, Infinity]).on("zoom", zoomed);
 	
 		// Zoom operates on a selection. In this case a rect has been added to the markup to perform this task.
-		d3.select( obj.node )
+		d3__namespace.select( obj.node )
 		  .select("g.background")
 		  .select("rect.zoom-area")
 		  .call(zoom);
@@ -1639,7 +2012,7 @@ class twoInteractiveAxesInset{
 		// The transformation vector is based on the domain of the image, therefore any manual scaling of the domain should also change it. The easiest way to overcome this is to apply the transformation as a delta to the existing state.
 		
 		// obj.viewtransform is where the current state is stored. If it is set to -1, then the given zoom action is not performed to allow any difference between d3.event.transform and obj.viewtransform due to manual rescaling of the domain to be resolved.
-		obj.viewtransform = d3.zoomIdentity;
+		obj.viewtransform = d3__namespace.zoomIdentity;
 		
 		function zoomed(event){
 			
@@ -1653,7 +2026,7 @@ class twoInteractiveAxesInset{
 			} // if
 			
 			// Hack to get the delta transformation.
-			var dt = d3.zoomIdentity;
+			var dt = d3__namespace.zoomIdentity;
 			dt.k = t.k / t0.k; 
 			dt.x = t.x - t0.x; 
 			dt.y = t.y - t0.y;
@@ -1711,7 +2084,7 @@ class twoInteractiveAxesInset{
 let template = `
 <div>
 	<div class="model-variable-selection"></div>
-	<div class="scatterplot"></div>
+	<div class="scatterplot" style="position: relative;"></div>
 </div>
 `;
 
@@ -1742,24 +2115,12 @@ class dbsliceScatterPlot extends dbsliceCrossfilterPlot{
 		
 		mobx.autorun(()=>{obj.draw();});
 		
+		console.log(obj);
+		
 	} // constructor
 	
 	
-	/*
-	// Shouldn't this be moved to the plot??
-	adddata(content){
-		// When new data is given to the plots they should update.
-		this.data = content.data;
-		this.variables = content.variables;
-		
-		// Pick an x and y variable.
-		this.xvariable = content.variables[0];
-		this.yvariable = content.variables[1];
-		
-		this.x.setdomain(d3.extent(content.data, d=>d.sepal_length))
-		this.y.setdomain(d3.extent(content.data, d=>d.sepal_width))
-	}
-	*/
+	
 	
 	
 	// It all works now!!
@@ -1778,11 +2139,11 @@ class dbsliceScatterPlot extends dbsliceCrossfilterPlot{
 			enter => enter.append("circle")
 			  .attr("r", 5)
 			  .attr("fill", "cornflowerblue")
-			  .attr("cx", d=>xaxis.scale( d[xaxis.variable.name] ))
-			  .attr("cy", d=>yaxis.scale( d[yaxis.variable.name] )),
+			  .attr("cx", d=>xaxis.getdrawvalue(d) )
+			  .attr("cy", d=>yaxis.getdrawvalue(d) ),
 			update => update
-			  .attr("cx", d=>xaxis.scale( d[xaxis.variable.name] ))
-			  .attr("cy", d=>yaxis.scale( d[yaxis.variable.name] )),
+			  .attr("cx", d=>xaxis.getdrawvalue(d) )
+			  .attr("cy", d=>yaxis.getdrawvalue(d) ),
 			exit => exit.remove()
 		  );
 		
